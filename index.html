@@ -60,50 +60,49 @@
 </head>
 <body>
 
-<!-- Payment Wall / Usage Badge -->
+<!-- Payment Wall -->
 <div class="usage-badge" id="usageBadge">🆓 剩余 1 次免费</div>
 
-<!-- Payment Modal -->
 <div class="payment-overlay" id="paymentOverlay">
   <div class="payment-modal">
-
-    <!-- Step 1: Show reward QR code -->
     <div class="payment-step active" id="payStep1">
-      <span style="font-size:48px">💰</span>
+      <span style="font-size:48px">🔒</span>
       <h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:12px 0 4px">免费次数已用完</h3>
-      <p style="font-size:14px;color:#86868b;margin-bottom:16px">继续使用需支付 <b style="color:#007AFF;font-size:18px">20元</b></p>
+      <p style="font-size:14px;color:#86868b;margin-bottom:14px">关注公众号获取使用资格</p>
 
-      <div style="background:#f5f5f7;border-radius:16px;padding:16px;margin-bottom:16px">
-        <p style="font-size:13px;color:#555;font-weight:600;margin-bottom:8px">扫码赞赏 20 元</p>
-        <img src="赞赏码.png" style="width:160px;height:160px;border-radius:12px;margin:0 auto" alt="赞赏码">
-        <p style="font-size:11px;color:#999;margin-top:8px">长按识别 · 支付20元</p>
+      <div style="background:#f5f5f7;border-radius:16px;padding:14px;margin-bottom:14px;text-align:center">
+        <p style="font-size:14px;color:#1a1a1a;font-weight:600;margin-bottom:6px">📱 关注「王炸小纸条」</p>
+        <p style="font-size:12px;color:#86868b;margin-bottom:10px">微信扫码关注，输入昵称即可使用</p>
+        <img src="公众号登录二维码.png" style="width:140px;height:140px;border-radius:12px;margin:0 auto" alt="公众号二维码">
       </div>
-      <p style="font-size:13px;color:#1a1a1a;font-weight:600;margin-bottom:6px">你的微信昵称</p>
-      <input type="text" id="wechatNick" class="recharge-input mb-3" placeholder="输入你的微信昵称（用于识别）" maxlength="20" autocomplete="off">
-      <button class="bg-[#007AFF] text-white border-none rounded-xl px-6 py-2.5 text-sm font-semibold cursor-pointer w-full" onclick="getRechargeCode()">🔑 获取充值码</button>
-    </div>
 
-    <!-- Step 2: Enter recharge code -->
-    <div class="payment-step" id="payStep2">
-      <span style="font-size:48px">🔑</span>
-      <h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:12px 0 4px">输入充值码</h3>
-      <p style="font-size:14px;color:#86868b;margin-bottom:16px">联系公众号获取充值码</p>
-      <input type="text" class="recharge-input" id="rechargeInput" placeholder="输入充值码" maxlength="12" autocomplete="off">
-      <p style="font-size:12px;color:#FF3B30;margin-top:6px;display:none" id="rechargeError">充值码无效，请联系公众号获取</p>
+      <div style="background:#f0f7ff;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+        <p style="font-size:13px;color:#1a1a1a;font-weight:600;text-align:center">✅ 已关注？输入微信昵称</p>
+        <input type="text" id="wechatNick" class="recharge-input mt-2" placeholder="你的微信昵称" maxlength="20" autocomplete="off">
+        <button class="mt-2 bg-[#34C759] text-white border-none rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer w-full" onclick="unlockByFollow()">🔓 获取使用资格</button>
+        <p style="font-size:10px;color:#999;margin-top:4px;text-align:center">限免1次。每人每设备仅限1次</p>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e5e5ea;margin:12px 0">
+
+      <div style="background:#f5f5f7;border-radius:12px;padding:12px;margin-bottom:10px">
+        <p style="font-size:13px;color:#555;font-weight:500;margin-bottom:6px">💎 赞赏20元继续使用</p>
+        <img src="赞赏码.png" style="width:120px;height:120px;border-radius:10px;margin:0 auto" alt="赞赏码">
+        <p style="font-size:10px;color:#999;margin-top:4px">赞赏后联系公众号获取解锁码</p>
+      </div>
+
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="flex-1 border border-[#e5e5ea] rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer bg-white" onclick="showStep(1)">返回</button>
-        <button class="flex-1 bg-[#34C759] text-white border-none rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer" onclick="verifyCode()">验证充值码</button>
+        <input type="text" id="adminUnlockInput" class="flex-1 p-2.5 border border-[#e5e5ea] rounded-xl text-sm text-center" placeholder="管理员解锁码" maxlength="8">
+        <button class="bg-[#007AFF] text-white px-4 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer" onclick="adminUnlock()">验证</button>
       </div>
     </div>
 
-    <!-- Step 3: Success -->
-    <div class="payment-step" id="payStep3">
+    <div class="payment-step" id="payStep2">
       <span style="font-size:64px">🎉</span>
-      <h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:12px 0 4px">充值成功！</h3>
-      <p style="font-size:14px;color:#86868b;margin-bottom:16px">已获得 1 次使用机会</p>
+      <h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:12px 0 4px" id="successTitle">解锁成功！</h3>
+      <p style="font-size:14px;color:#86868b;margin-bottom:16px" id="successDesc">欢迎关注「王炸小纸条」</p>
       <button class="bg-[#007AFF] text-white border-none rounded-xl px-8 py-2.5 text-sm font-semibold cursor-pointer" onclick="closePayment()">开始计算</button>
     </div>
-
   </div>
 </div>
 
@@ -259,7 +258,7 @@
     </div>
 
     <div class="text-center mt-6">
-      <button class="bg-[#007AFF] text-white border-none rounded-xl px-10 py-3.5 text-base font-bold cursor-pointer transition-all hover:bg-[#0066d6] hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]" onclick="calculate()">
+      <button class="bg-[#007AFF] text-white border-none rounded-xl px-10 py-3.5 text-base font-bold cursor-pointer transition-all hover:bg-[#0066d6] hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]" onclick="doCalc()">
         ⚡ 开始计算
       </button>
     </div>
@@ -320,7 +319,7 @@
 <script>
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
-function calculate() {
+function __runCalc() {
   var T = parseFloat(document.getElementById('T').value) || 0;
   var p_cap = parseFloat(document.getElementById('p_cap').value) || 0;
   var E_new = parseFloat(document.getElementById('E_new').value) || 0;
@@ -433,19 +432,17 @@ function calculate() {
 }
 
 // ===== 付费逻辑 =====
-var FREE_USES = 1; // 免费次数
-var PRICE = 20;    // 单次价格
+// ===== 关注解锁 + 付费逻辑 =====
+var FREE_USES = 1;
 
 function getUsage() {
   var u = localStorage.getItem('calc_usage');
   return u ? parseInt(u) : 0;
 }
-
 function addUsage() {
   localStorage.setItem('calc_usage', getUsage() + 1);
   updateBadge();
 }
-
 function updateBadge() {
   var used = getUsage();
   var badge = document.getElementById('usageBadge');
@@ -454,199 +451,69 @@ function updateBadge() {
     badge.textContent = '🆓 剩余 ' + remaining + ' 次免费';
     badge.style.display = 'block';
   } else {
-    badge.textContent = '🔒 已付费: ' + used + ' 次';
+    var unlocked = localStorage.getItem('calc_unlocked') || '';
+    badge.textContent = unlocked ? '✅ 已解锁' : '🔒 关注解锁';
     badge.style.display = 'block';
   }
 }
-
 function canUse() {
-  return getUsage() < FREE_USES;
+  var unlocked = localStorage.getItem('calc_unlocked') || '';
+  return getUsage() < FREE_USES || unlocked === 'true' || unlocked === 'admin';
 }
-
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
 }
-
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
   updateBadge();
+  if (canUse()) __runCalc();
 }
-
-function showStep(n) {
-  document.querySelectorAll('.payment-step').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('payStep' + n).classList.add('active');
-  document.getElementById('rechargeError').style.display = 'none';
-}
-
-// 获取充值码（自动）
-var API_BASE = '/api';
-
-async function getRechargeCode() {
+function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
-  var err = document.getElementById('rechargeError');
-  if (!nick) { err.textContent = '请输入你的微信昵称'; err.style.display = 'block'; return; }
-
-  try {
-    var resp = await fetch(API_BASE + '/verify', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({code: 'PENDING', nick: nick})
-    });
-    var r = await resp.json();
-    if (r.ok && r.isAdmin) {
-      // 管理员免费用
-      closePayment();
-      calculate();
-      return;
-    }
-  } catch(e) {}
-
-  showStep(2);
-  document.getElementById('payStepKey').textContent = '联系公众号管理员获取充值码';
+  if (!nick) { alert('请输入你的微信昵称'); return; }
+  var used = JSON.parse(localStorage.getItem('calc_used_nicks') || '[]');
+  if (used.indexOf(nick) >= 0) { alert('该昵称已使用过免费资格'); return; }
+  used.push(nick);
+  localStorage.setItem('calc_used_nicks', JSON.stringify(used));
+  localStorage.setItem('calc_unlocked', 'true');
+  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
+  document.getElementById('successDesc').textContent = '欢迎关注「王炸小纸条」，开始使用';
+  document.getElementById('payStep1').classList.remove('active');
+  document.getElementById('payStep2').classList.add('active');
+}
+function adminUnlock() {
+  var code = document.getElementById('adminUnlockInput').value.trim();
+  if (!code || code.length !== 6 || isNaN(code)) { alert('解锁码无效'); return; }
+  var sum = parseInt(code[0])+parseInt(code[1])+parseInt(code[2])+parseInt(code[3])+parseInt(code[4])+parseInt(code[5]);
+  if (sum % 3 !== 0) { alert('解锁码无效'); return; }
+  localStorage.setItem('calc_unlocked', 'true');
+  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
+  document.getElementById('successDesc').textContent = '已获得使用权限';
+  document.getElementById('payStep1').classList.remove('active');
+  document.getElementById('payStep2').classList.add('active');
+}
+// 管理员工具：生成6位解锁码（F12 → Console → genUnlockCode()）
+function genUnlockCode() {
+  var c='';for(var i=0;i<6;i++)c+=Math.floor(Math.random()*10);
+  var s=parseInt(c[0])+parseInt(c[1])+parseInt(c[2])+parseInt(c[3])+parseInt(c[4])+parseInt(c[5]);
+  if(s%3===0){console.log('✅ 解锁码: '+c);return c;}
+  return genUnlockCode();
 }
 
-// 验证充值码（带后端API）
-function verifyCode() {
-  var code = document.getElementById('rechargeInput').value.trim().toUpperCase();
-  var error = document.getElementById('rechargeError');
-  error.style.display = 'none';
-
-  if (!code || code.length < 8) {
-    error.textContent = '充值码格式不正确（格式：WZ-XXXX-XXXX）';
-    error.style.display = 'block';
-    return;
-  }
-
-  // 本地快速校验
-  if (!isValidCode(code)) {
-    error.textContent = '充值码无效，请检查输入';
-    error.style.display = 'block';
-    return;
-  }
-
-  // 调用后端验证
-  fetch(API_BASE + '/verify', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({code: code, nick: '用户'})
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(r){
-    if (r.ok) {
-      // 充值成功
-      var u = getUsage();
-      if (u > 0) localStorage.setItem('calc_usage', u - 1);
-      updateBadge();
-      showStep(3);
-    } else if (r.isAdmin) {
-      closePayment();
-      calculate();
-    } else {
-      error.textContent = r.error || '充值码无效，请联系公众号';
-      error.style.display = 'block';
-    }
-  })
-  .catch(function(){
-    // 离线备用：本地验证
-    offlineVerify(code);
-  });
-}
-
-// 离线备用验证
-function offlineVerify(code) {
-  if (!isValidCode(code)) {
-    document.getElementById('rechargeError').textContent = '充值码无效';
-    document.getElementById('rechargeError').style.display = 'block';
-    return;
-  }
-  var usedCodes = JSON.parse(localStorage.getItem('calc_used_codes') || '[]');
-  if (usedCodes.indexOf(code) >= 0) {
-    document.getElementById('rechargeError').textContent = '该充值码已被使用';
-    document.getElementById('rechargeError').style.display = 'block';
-    return;
-  }
-  usedCodes.push(code);
-  localStorage.setItem('calc_used_codes', JSON.stringify(usedCodes));
-  var u = getUsage();
-  if (u > 0) localStorage.setItem('calc_usage', u - 1);
-  updateBadge();
-  showStep(3);
-}
-
-// 充值码验证算法
-function isValidCode(code) {
-  // 格式: WZ-XXXX-XXXX
-  var parts = code.split('-');
-  if (parts.length !== 3 || parts[0] !== 'WZ') return false;
-  if (parts[1].length !== 4 || parts[2].length !== 4) return false;
-
-  var codeBody = parts[1] + parts[2];
-  // 简单校验：字母和数字混合，验证和
-  var sum = 0;
-  for (var i = 0; i < codeBody.length; i++) {
-    var c = codeBody.charCodeAt(i);
-    sum += c;
-  }
-  // 验证和必须能被 3 整除（简单防误输）
-  return sum % 3 === 0;
-}
-
-// 管理员工具：生成充值码（需要后端API）
-async function generateCode() {
-  try {
-    var resp = await fetch(API_BASE + '/generate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({adminKey: prompt('请输入管理员密钥:') || ''})
-    });
-    var r = await resp.json();
-    if (r.ok) { alert('充值码: ' + r.code); return r.code; }
-    else { alert('生成失败: ' + r.error); }
-  } catch(e) {
-    // 离线模式：本地生成
-    return localGenerateCode();
-  }
-}
-
-function localGenerateCode() {
-  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  var p1 = '', p2 = '';
-  for (var i = 0; i < 4; i++) p1 += chars[Math.floor(Math.random() * chars.length)];
-  for (var i = 0; i < 4; i++) p2 += chars[Math.floor(Math.random() * chars.length)];
-  var code = 'WZ-' + p1 + '-' + p2;
-  if (isValidCode(code)) {
-    console.log('✅ 充值码: ' + code);
-    return code;
-  }
-  return localGenerateCode();
-}
-
-// 拦截 calculate()，先检查免费次数
-var originalCalculate = calculate;
-calculate = function() {
-  // 检查管理员白名单
-  var adminNicks = ['王炸小纸条', 'Pom'];
-  var storedNick = localStorage.getItem('calc_admin') || '';
-  if (adminNicks.indexOf(storedNick) >= 0) {
-    originalCalculate();
-    return;
-  }
+// 计算入口（带付费检查）
+function doCalc() {
   if (canUse()) {
     addUsage();
-    originalCalculate();
+    __runCalc();
   } else {
     showPaymentWall();
   }
-};
+}
 
 window.onload = function() {
-  // 检测管理员
-  var storedNick = localStorage.getItem('calc_admin') || '';
-  if (storedNick) document.getElementById('usageBadge').textContent = '👑 管理员模式';
-
   updateBadge();
-  if (canUse() || storedNick) {
-    calculate();
+  if (canUse()) {
+    __runCalc();
   }
 };
 
@@ -655,13 +522,11 @@ var adminClicks = 0;
 function adminClick() {
   adminClicks++;
   if (adminClicks >= 5) {
-    var nick = prompt('🔑 输入你的微信昵称，加入管理员白名单');
-    if (nick) {
-      localStorage.setItem('calc_admin', nick);
-      document.getElementById('usageBadge').textContent = '👑 管理员模式';
-      adminClicks = 0;
-      calculate();
-    }
+    localStorage.setItem('calc_unlocked', 'admin');
+    document.getElementById('usageBadge').textContent = '👑 管理员';
+    adminClicks = 0;
+    closePayment();
+    __runCalc();
   }
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
