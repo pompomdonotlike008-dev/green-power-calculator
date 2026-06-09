@@ -75,13 +75,12 @@
 
       <div style="background:#f5f5f7;border-radius:16px;padding:16px;margin-bottom:16px">
         <p style="font-size:13px;color:#555;font-weight:600;margin-bottom:8px">扫码赞赏 20 元</p>
-        <!-- 替换 src 为你的赞赏码图片链接 -->
-        <img src="https://res.wx.qq.com/mpres/zh_CN/htmledition/images/mp_qrcode7e7b9f.gif" style="width:160px;height:160px;border-radius:12px;margin:0 auto" alt="赞赏码">
-        <p style="font-size:11px;color:#999;margin-top:8px">长按识别 · 赞赏后获取充值码</p>
+        <img src="赞赏码.png" style="width:160px;height:160px;border-radius:12px;margin:0 auto" alt="赞赏码">
+        <p style="font-size:11px;color:#999;margin-top:8px">长按识别 · 支付20元</p>
       </div>
-
-      <button class="bg-[#007AFF] text-white border-none rounded-xl px-6 py-2.5 text-sm font-semibold cursor-pointer w-full" onclick="showStep(2)">我已付款，输入充值码</button>
-      <p style="font-size:11px;color:#a1a1a6;margin-top:10px">付款后联系公众号「王炸小纸条」获取充值码</p>
+      <p style="font-size:13px;color:#1a1a1a;font-weight:600;margin-bottom:6px">你的微信昵称</p>
+      <input type="text" id="wechatNick" class="recharge-input mb-3" placeholder="输入你的微信昵称（用于识别）" maxlength="20" autocomplete="off">
+      <button class="bg-[#007AFF] text-white border-none rounded-xl px-6 py-2.5 text-sm font-semibold cursor-pointer w-full" onclick="getRechargeCode()">🔑 获取充值码</button>
     </div>
 
     <!-- Step 2: Enter recharge code -->
@@ -112,7 +111,7 @@
 
   <!-- Header -->
   <div class="text-center mb-8">
-    <div class="text-5xl mb-3">⚡</div>
+    <div class="text-5xl mb-3" id="adminTrigger" onclick="adminClick()">⚡</div>
     <h1 class="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] tracking-tight">绿电直连电费计算器</h1>
     <p class="text-base md:text-lg text-[#86868b] mt-2 font-medium">两部制 vs 容量制 · 月度电费对比</p>
     <div class="flex items-center justify-center gap-3 mt-3 text-xs text-[#a1a1a6]">
@@ -479,41 +478,99 @@ function showStep(n) {
   document.getElementById('rechargeError').style.display = 'none';
 }
 
-// 充值码验证（管理员可在后台生成）
-// 充值码格式：WZ-XXXX-XXXX，由字母和数字组成
+// 获取充值码（自动）
+var API_BASE = '/api';
+
+async function getRechargeCode() {
+  var nick = document.getElementById('wechatNick').value.trim();
+  var err = document.getElementById('rechargeError');
+  if (!nick) { err.textContent = '请输入你的微信昵称'; err.style.display = 'block'; return; }
+
+  try {
+    var resp = await fetch(API_BASE + '/verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({code: 'PENDING', nick: nick})
+    });
+    var r = await resp.json();
+    if (r.ok && r.isAdmin) {
+      // 管理员免费用
+      closePayment();
+      calculate();
+      return;
+    }
+  } catch(e) {}
+
+  showStep(2);
+  document.getElementById('payStepKey').textContent = '联系公众号管理员获取充值码';
+}
+
+// 验证充值码（带后端API）
 function verifyCode() {
   var code = document.getElementById('rechargeInput').value.trim().toUpperCase();
   var error = document.getElementById('rechargeError');
   error.style.display = 'none';
 
   if (!code || code.length < 8) {
-    error.textContent = '充值码格式不正确';
+    error.textContent = '充值码格式不正确（格式：WZ-XXXX-XXXX）';
     error.style.display = 'block';
     return;
   }
 
-  // 从 localStorage 读取已使用过的充值码
+  // 本地快速校验
+  if (!isValidCode(code)) {
+    error.textContent = '充值码无效，请检查输入';
+    error.style.display = 'block';
+    return;
+  }
+
+  // 调用后端验证
+  fetch(API_BASE + '/verify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code: code, nick: '用户'})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(r){
+    if (r.ok) {
+      // 充值成功
+      var u = getUsage();
+      if (u > 0) localStorage.setItem('calc_usage', u - 1);
+      updateBadge();
+      showStep(3);
+    } else if (r.isAdmin) {
+      closePayment();
+      calculate();
+    } else {
+      error.textContent = r.error || '充值码无效，请联系公众号';
+      error.style.display = 'block';
+    }
+  })
+  .catch(function(){
+    // 离线备用：本地验证
+    offlineVerify(code);
+  });
+}
+
+// 离线备用验证
+function offlineVerify(code) {
+  if (!isValidCode(code)) {
+    document.getElementById('rechargeError').textContent = '充值码无效';
+    document.getElementById('rechargeError').style.display = 'block';
+    return;
+  }
   var usedCodes = JSON.parse(localStorage.getItem('calc_used_codes') || '[]');
   if (usedCodes.indexOf(code) >= 0) {
-    error.textContent = '该充值码已被使用';
-    error.style.display = 'block';
+    document.getElementById('rechargeError').textContent = '该充值码已被使用';
+    document.getElementById('rechargeError').style.display = 'block';
     return;
   }
-
-  // 验证充值码（管理员密钥验证）
-  // 管理员用下方 generateCode() 函数生成充值码
-  if (isValidCode(code)) {
-    usedCodes.push(code);
-    localStorage.setItem('calc_used_codes', JSON.stringify(usedCodes));
-    // 充值成功：将已使用次数回退，相当于送一次
-    var u = getUsage();
-    if (u > 0) localStorage.setItem('calc_usage', u - 1);
-    updateBadge();
-    showStep(3);
-  } else {
-    error.textContent = '充值码无效，请联系公众号「王炸小纸条」';
-    error.style.display = 'block';
-  }
+  usedCodes.push(code);
+  localStorage.setItem('calc_used_codes', JSON.stringify(usedCodes));
+  var u = getUsage();
+  if (u > 0) localStorage.setItem('calc_usage', u - 1);
+  updateBadge();
+  showStep(3);
 }
 
 // 充值码验证算法
@@ -534,41 +591,80 @@ function isValidCode(code) {
   return sum % 3 === 0;
 }
 
-// 管理员工具：生成充值码（在控制台运行）
-// 打开浏览器 F12 → Console → 输入 generateCode() 回车
-function generateCode() {
+// 管理员工具：生成充值码（需要后端API）
+async function generateCode() {
+  try {
+    var resp = await fetch(API_BASE + '/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({adminKey: prompt('请输入管理员密钥:') || ''})
+    });
+    var r = await resp.json();
+    if (r.ok) { alert('充值码: ' + r.code); return r.code; }
+    else { alert('生成失败: ' + r.error); }
+  } catch(e) {
+    // 离线模式：本地生成
+    return localGenerateCode();
+  }
+}
+
+function localGenerateCode() {
   var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var p1 = '', p2 = '';
   for (var i = 0; i < 4; i++) p1 += chars[Math.floor(Math.random() * chars.length)];
   for (var i = 0; i < 4; i++) p2 += chars[Math.floor(Math.random() * chars.length)];
-
-  // 确保验证通过（多数情况会通过，但防万一）
   var code = 'WZ-' + p1 + '-' + p2;
   if (isValidCode(code)) {
     console.log('✅ 充值码: ' + code);
     return code;
   }
-  return generateCode();
+  return localGenerateCode();
 }
 
 // 拦截 calculate()，先检查免费次数
-var origCalculate = calculate;
+var originalCalculate = calculate;
 calculate = function() {
+  // 检查管理员白名单
+  var adminNicks = ['王炸小纸条', 'Pom'];
+  var storedNick = localStorage.getItem('calc_admin') || '';
+  if (adminNicks.indexOf(storedNick) >= 0) {
+    originalCalculate();
+    return;
+  }
   if (canUse()) {
     addUsage();
-    origCalculate();
+    originalCalculate();
   } else {
     showPaymentWall();
   }
 };
 
 window.onload = function() {
+  // 检测管理员
+  var storedNick = localStorage.getItem('calc_admin') || '';
+  if (storedNick) document.getElementById('usageBadge').textContent = '👑 管理员模式';
+
   updateBadge();
-  // 如果还有免费次数，自动计算
-  if (canUse()) {
+  if (canUse() || storedNick) {
     calculate();
   }
 };
+
+// 管理员激活：连续点击 ⚡ 5次
+var adminClicks = 0;
+function adminClick() {
+  adminClicks++;
+  if (adminClicks >= 5) {
+    var nick = prompt('🔑 输入你的微信昵称，加入管理员白名单');
+    if (nick) {
+      localStorage.setItem('calc_admin', nick);
+      document.getElementById('usageBadge').textContent = '👑 管理员模式';
+      adminClicks = 0;
+      calculate();
+    }
+  }
+  setTimeout(function(){ adminClicks = 0; }, 3000);
+}
 </script>
 </body>
 </html>
