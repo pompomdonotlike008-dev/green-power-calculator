@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绿电直连电费计算器</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { font-family: 'Inter', 'PingFang SC', 'Helvetica Neue', sans-serif; }
+  body { background: #f5f5f7; }
+  .card { background: #fff; border-radius: 20px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .param-card { background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; transition: border-color 0.2s, box-shadow 0.2s; }
+  .param-card:hover { border-color: #d0d0d8; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .input-field { width: 100%; padding: 12px 16px; border: 1.5px solid #e5e5ea; border-radius: 12px; font-size: 16px; color: #1a1a1a; outline: none; transition: all 0.2s; background: #fafafa; font-weight: 500; }
+  .input-field:focus { border-color: #007AFF; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); background: #fff; }
+  .input-field::placeholder { color: #c7c7cc; font-weight: 400; }
+  .input-group { margin-bottom: 12px; }
+  .input-group label { display: block; font-size: 12px; font-weight: 600; color: #86868b; letter-spacing: 0.3px; margin-bottom: 6px; text-transform: uppercase; }
+  .input-unit { font-size: 12px; color: #a1a1a6; margin-top: 4px; padding-left: 4px; }
+  .result-card { border-radius: 20px; padding: 24px; position: relative; overflow: hidden; }
+  .result-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .result-two::before { background: linear-gradient(90deg, #d4af37, #f0d68a); }
+  .result-cap::before { background: linear-gradient(90deg, #007AFF, #5AC8FA); }
+  .result-value { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+  .result-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid rgba(0,0,0,0.04); }
+  .result-item:last-child { border-bottom: none; }
+  .section-badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; }
+  .badge-win { background: #e8f5e9; color: #2e7d32; }
+  .badge-lose { background: #fff5f5; color: #c62828; }
+  .badge-equal { background: #f5f5f7; color: #86868b; }
+  .gauge-bg { background: linear-gradient(90deg, #FF3B30 0%, #FF9500 30%, #FFCC00 50%, #34C759 70%, #007AFF 100%); height: 12px; border-radius: 6px; position: relative; }
+  .gauge-pointer { position: absolute; top: -10px; width: 32px; height: 32px; background: #fff; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.25, 0.1, 0.25, 1); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid #e5e5ea; }
+  .summary-change { font-size: 15px; font-weight: 700; padding: 8px 16px; border-radius: 12px; display: inline-block; }
+  @media (max-width: 640px) {
+    .card { padding: 20px 16px; }
+    .param-card { padding: 16px; }
+    .result-value { font-size: 26px; }
+    .result-card { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="max-w-5xl mx-auto px-4 py-6 md:py-10">
+
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="text-5xl mb-3">⚡</div>
+    <h1 class="text-3xl md:text-4xl font-extrabold text-[#1a1a1a] tracking-tight">绿电直连电费计算器</h1>
+    <p class="text-base md:text-lg text-[#86868b] mt-2 font-medium">两部制 vs 容量制 · 月度电费对比</p>
+    <div class="flex items-center justify-center gap-3 mt-3 text-xs text-[#a1a1a6]">
+      <span class="px-3 py-1 bg-[#f5f5f7] rounded-full">基于1192号文</span>
+      <span class="px-3 py-1 bg-[#f5f5f7] rounded-full">实时计算</span>
+    </div>
+  </div>
+
+  <!-- Live Result Summary -->
+  <div id="liveSummary" class="card mb-6 text-center" style="display:none;">
+    <p class="text-sm text-[#86868b] font-medium">推荐方案</p>
+    <div id="recommendation" class="text-xl font-bold mt-1"></div>
+    <div class="gauge-bg mt-4 max-w-md mx-auto relative" id="gaugeContainer">
+      <div class="gauge-pointer" id="gaugePointer">💡</div>
+    </div>
+    <div class="flex justify-between text-xs text-[#a1a1a6] mt-2 max-w-md mx-auto">
+      <span>两部制更省</span>
+      <span>⬇</span>
+      <span>容量制更省</span>
+    </div>
+  </div>
+
+  <!-- Input Section -->
+  <div class="card mb-6">
+    <div class="flex items-center gap-3 mb-3">
+      <span class="text-2xl">📋</span>
+      <div>
+        <h2 class="text-xl font-bold text-[#1a1a1a]">参数输入</h2>
+        <p class="text-sm text-[#86868b]">填写以下参数，系统自动对比两种模式</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <!-- 基础参数 -->
+      <div class="md:col-span-2 lg:col-span-3">
+        <div class="flex items-center gap-2 mt-2 mb-3">
+          <span class="text-sm">📐</span>
+          <span class="text-sm font-bold text-[#1a1a1a]">基础参数</span>
+          <div class="flex-1 h-px bg-[#e5e5ea]"></div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>📦 容量/需量 (T)</label>
+          <input type="number" id="T" class="input-field" value="1000" step="1" min="0" placeholder="例如 1000">
+          <div class="input-unit">单位：kVA 或 kW</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>💰 容量电价/需量电价</label>
+          <input type="number" id="p_cap" class="input-field" value="23" step="0.1" min="0" placeholder="例如 23">
+          <div class="input-unit">单位：元/kVA 或 元/kW</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>📊 全省平均负荷率 (LFm)</label>
+          <input type="number" id="LFm" class="input-field" value="60" step="0.1" min="0" max="100" placeholder="例如 60">
+          <div class="input-unit">单位：%</div>
+        </div>
+      </div>
+
+      <!-- 电量参数 -->
+      <div class="md:col-span-2 lg:col-span-3">
+        <div class="flex items-center gap-2 mt-2 mb-3">
+          <span class="text-sm">🔋</span>
+          <span class="text-sm font-bold text-[#1a1a1a]">电量参数</span>
+          <div class="flex-1 h-px bg-[#e5e5ea]"></div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🌿 绿电供给电量 (E新)</label>
+          <input type="number" id="E_new" class="input-field" value="500000" step="1000" min="0" placeholder="例如 500000">
+          <div class="input-unit">单位：kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🏭 购买大网电量 (E网)</label>
+          <input type="number" id="E_grid" class="input-field" value="148000" step="1000" min="0" placeholder="例如 148000">
+          <div class="input-unit">单位：kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>📈 用户实际负荷率 (LF)</label>
+          <input type="number" id="LF" class="input-field" value="90" step="0.1" min="0" max="100" placeholder="例如 90">
+          <div class="input-unit">单位：%</div>
+        </div>
+      </div>
+
+      <!-- 电价参数 -->
+      <div class="md:col-span-2 lg:col-span-3">
+        <div class="flex items-center gap-2 mt-2 mb-3">
+          <span class="text-sm">💵</span>
+          <span class="text-sm font-bold text-[#1a1a1a]">电价参数</span>
+          <div class="flex-1 h-px bg-[#e5e5ea]"></div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🌱 绿电购电价格 (p绿)</label>
+          <input type="number" id="p_green" class="input-field" value="0.65" step="0.01" min="0" placeholder="0.65">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🔌 大网购电价格 (p购)</label>
+          <input type="number" id="p_buy" class="input-field" value="0.48" step="0.01" min="0" placeholder="0.48">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🔗 电度输配电价 (p输配)</label>
+          <input type="number" id="p_trans" class="input-field" value="0.15" step="0.005" min="0" placeholder="0.15">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>📉 线损电价 (p损)</label>
+          <input type="number" id="p_loss" class="input-field" value="0.02" step="0.005" min="0" placeholder="0.02">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>⚙️ 运行电价 (p运)</label>
+          <input type="number" id="p_op" class="input-field" value="0.08" step="0.01" min="0" placeholder="0.08">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+      <div class="param-card">
+        <div class="input-group">
+          <label>🏛️ 政府基金及附加 (p附)</label>
+          <input type="number" id="p_fund" class="input-field" value="0.07" step="0.01" min="0" placeholder="0.07">
+          <div class="input-unit">元/kWh</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-6">
+      <button class="bg-[#007AFF] text-white border-none rounded-xl px-10 py-3.5 text-base font-bold cursor-pointer transition-all hover:bg-[#0066d6] hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]" onclick="calculate()">
+        ⚡ 开始计算
+      </button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" style="display:none;">
+
+    <!-- Side-by-side result cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="result-card result-two" style="background:#faf8f4">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">📊</span>
+          <span class="section-badge" style="background:rgba(212,175,55,0.15);color:#b8942e;">两部制</span>
+        </div>
+        <p class="text-xs text-[#999] mb-1 flex items-center gap-1">传统模式 · 容量电费 + 综合电度电价×总用电量</p>
+        <div class="result-value text-[#1a1a1a] mb-3" id="result_two">--</div>
+        <div class="text-sm text-[#666]" id="detail_two"></div>
+      </div>
+      <div class="result-card result-cap" style="background:#f0f7ff">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg">⚡</span>
+          <span class="section-badge" style="background:rgba(0,122,255,0.12);color:#007AFF;">容量制</span>
+        </div>
+        <p class="text-xs text-[#888] mb-1 flex items-center gap-1">绿电直连 · 容量电费 + 绿电购电 + 大网购电(不含输配) + 容量制输配</p>
+        <div class="result-value text-[#007AFF] mb-3" id="result_cap">--</div>
+        <div class="text-sm text-[#555]" id="detail_cap"></div>
+      </div>
+    </div>
+
+    <!-- Analysis -->
+    <div class="card mb-6">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xl">📊</span>
+        <h2 class="text-lg font-bold text-[#1a1a1a]">差异分析</h2>
+      </div>
+      <div id="analysis_content" class="mt-2"></div>
+    </div>
+
+    <!-- Detailed comparison -->
+    <div class="card">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xl">🔬</span>
+        <h2 class="text-lg font-bold text-[#1a1a1a]">分项明细对比</h2>
+      </div>
+      <p class="text-sm text-[#86868b] mb-4">逐项对比两种模式的费用构成</p>
+      <div id="comparison_table"></div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="text-center mt-10 mb-6">
+    <p class="text-xs text-[#c7c7cc] leading-relaxed">王炸小纸条 · 绿电直连电费计算器<br>基于1192号文的完整电费模型 · 以上为个人学习模型，不构成任何投资或工作建议</p>
+  </div>
+</div>
+
+<script>
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function calculate() {
+  var T = parseFloat(document.getElementById('T').value) || 0;
+  var p_cap = parseFloat(document.getElementById('p_cap').value) || 0;
+  var E_new = parseFloat(document.getElementById('E_new').value) || 0;
+  var E_grid = parseFloat(document.getElementById('E_grid').value) || 0;
+  var p_green = parseFloat(document.getElementById('p_green').value) || 0;
+  var p_buy = parseFloat(document.getElementById('p_buy').value) || 0;
+  var p_trans = parseFloat(document.getElementById('p_trans').value) || 0;
+  var p_loss = parseFloat(document.getElementById('p_loss').value) || 0;
+  var p_op = parseFloat(document.getElementById('p_op').value) || 0;
+  var p_fund = parseFloat(document.getElementById('p_fund').value) || 0;
+  var LFm = parseFloat(document.getElementById('LFm').value) || 0;
+  var LF = parseFloat(document.getElementById('LF').value) || 0;
+
+  var H = 730, E_total = E_new + E_grid;
+  var p_composite = p_buy + p_trans + p_loss + p_op + p_fund;
+
+  // === 两部制 ===
+  var cap_fee_two = T * p_cap;
+  var energy_fee_two = E_total * p_composite;
+  var total_two = cap_fee_two + energy_fee_two;
+
+  // === 容量制 ===
+  var cap_fee_cap = T * p_cap;
+  var green_fee = E_new * p_green;
+  var grid_fee = E_grid * (p_buy + p_loss + p_op + p_fund);
+  var trans_fee_cap = T * H * p_trans * (LFm / 100);
+  var total_cap = cap_fee_cap + green_fee + grid_fee + trans_fee_cap;
+
+  var diff = total_cap - total_two;
+  var diffAbs = Math.abs(diff);
+
+  // Show results
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('liveSummary').style.display = 'block';
+  document.getElementById('result_two').textContent = '¥ ' + fmt(total_two);
+  document.getElementById('result_cap').textContent = '¥ ' + fmt(total_cap);
+
+  // Details
+  document.getElementById('detail_two').innerHTML =
+    '<div class="result-item"><span>容量电费</span><span class="font-mono font-medium">' + fmt(cap_fee_two) + '</span></div>' +
+    '<div class="result-item"><span>电度电费</span><span class="font-mono font-medium">' + fmt(energy_fee_two) + '</span></div>' +
+    '<div class="result-item"><span class="text-xs text-[#999]">综合电价</span><span class="text-xs font-mono text-[#999]">' + p_composite.toFixed(4) + ' 元/kWh</span></div>';
+
+  document.getElementById('detail_cap').innerHTML =
+    '<div class="result-item"><span>容量电费（固定）</span><span class="font-mono font-medium">' + fmt(cap_fee_cap) + '</span></div>' +
+    '<div class="result-item"><span>绿电购电</span><span class="font-mono font-medium">' + fmt(green_fee) + '</span></div>' +
+    '<div class="result-item"><span>大网购电(不含输配)</span><span class="font-mono font-medium">' + fmt(grid_fee) + '</span></div>' +
+    '<div class="result-item"><span>输配电费(容量制)</span><span class="font-mono font-medium">' + fmt(trans_fee_cap) + '</span></div>';
+
+  // 差异分析
+  var verdict = '', badge = '', desc = '';
+  if (diff < 0) {
+    verdict = '容量制更省钱';
+    badge = '<span class="badge-win">✅ ' + verdict + '</span>';
+    desc = '容量制比两部制节省 <b class="text-[#2e7d32]">¥ ' + fmt(diffAbs) + '</b>';
+  } else if (diff > 0) {
+    verdict = '两部制更省钱';
+    badge = '<span class="badge-lose">⚠️ ' + verdict + '</span>';
+    desc = '容量制比两部制多交 <b class="text-[#c62828]">¥ ' + fmt(diffAbs) + '</b>';
+  } else {
+    verdict = '两种方式相等';
+    badge = '<span class="badge-equal">⚖️ ' + verdict + '</span>';
+    desc = '两种模式电费完全相同';
+  }
+  document.getElementById('recommendation').innerHTML = badge + ' <span class="text-base font-normal text-[#555] ml-2">' + desc + '</span>';
+
+  // Gauge
+  var gaugeVal = 50;
+  if (total_two + total_cap > 0) gaugeVal = 50 + (diff / ((total_two + total_cap) / 2)) * 25;
+  gaugeVal = Math.max(5, Math.min(95, gaugeVal));
+  document.getElementById('gaugePointer').style.left = gaugeVal + '%';
+
+  document.getElementById('analysis_content').innerHTML =
+    '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">' +
+      '<div class="bg-[#f5f5f7] rounded-xl p-4 text-center">' +
+        '<p class="text-xs text-[#86868b] uppercase tracking-wider font-semibold">两部制</p>' +
+        '<p class="text-xl font-bold text-[#1a1a1a] mt-1">¥ ' + fmt(total_two) + '</p>' +
+      '</div>' +
+      '<div class="bg-[#f5f5f7] rounded-xl p-4 text-center">' +
+        '<p class="text-xs text-[#86868b] uppercase tracking-wider font-semibold">容量制</p>' +
+        '<p class="text-xl font-bold text-[#007AFF] mt-1">¥ ' + fmt(total_cap) + '</p>' +
+      '</div>' +
+      '<div class="rounded-xl p-4 text-center ' + (diff < 0 ? 'bg-[#e8f5e9]' : diff > 0 ? 'bg-[#fff5f5]' : 'bg-[#f5f5f7]') + '">' +
+        '<p class="text-xs text-[#86868b] uppercase tracking-wider font-semibold">差额</p>' +
+        '<p class="text-xl font-bold mt-1 ' + (diff < 0 ? 'text-[#2e7d32]' : diff > 0 ? 'text-[#c62828]' : 'text-[#86868b]') + '">' + (diff < 0 ? '− ' : '+ ') + '¥ ' + fmt(diffAbs) + '</p>' +
+      '</div>' +
+    '</div>' +
+    '<hr class="my-4 border-[#e5e5ea]">' +
+    '<div class="flex flex-wrap items-center gap-2 text-sm"><span class="font-semibold text-[#1a1a1a]">判断标准：</span>' +
+      '<span class="text-[#555]">LF = ' + LF + '% ，LFm = ' + LFm + '% → </span>' +
+      '<span class="font-semibold ' + (LF > LFm ? 'text-[#2e7d32]' : 'text-[#c62828]') + '">' + (LF > LFm ? 'LF > LFm，推荐容量制 ✅' : 'LF < LFm，推荐两部制') + '</span>' +
+    '</div>';
+
+  // 对比表
+  document.getElementById('comparison_table').innerHTML =
+    '<div style="overflow-x:auto"><table class="w-full text-sm" style="border-collapse:collapse">' +
+    '<tr><th class="p-3 text-left font-semibold text-[#1a1a1a]" style="background:#f5f5f7;border-radius:12px 0 0 0">费用项目</th><th class="p-3 text-center font-semibold text-[#b8942e]" style="background:#faf8f4;width:30%">两部制</th><th class="p-3 text-center font-semibold text-[#007AFF]" style="background:#f0f7ff;width:30%;border-radius:0 12px 0 0">容量制</th></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-3 text-[#555]">容量电费</td><td class="p-3 text-center font-mono font-medium">' + fmt(cap_fee_two) + '</td><td class="p-3 text-center font-mono font-medium">' + fmt(cap_fee_cap) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-3 text-[#555]">购电/绿电电费</td><td class="p-3 text-center font-mono font-medium">' + fmt(energy_fee_two) + '</td><td class="p-3 text-center font-mono font-medium">' + fmt(green_fee + grid_fee) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-3 text-[#999] pl-6 text-xs">└ 绿电购电</td><td class="p-3 text-center font-mono text-xs text-[#999]">已含</td><td class="p-3 text-center font-mono text-xs">' + fmt(green_fee) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-3 text-[#999] pl-6 text-xs">└ 大网购电(不含输配)</td><td class="p-3 text-center font-mono text-xs text-[#999]">已含</td><td class="p-3 text-center font-mono text-xs">' + fmt(grid_fee) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-3 text-[#555]">输配电费</td><td class="p-3 text-center font-mono font-medium">已含</td><td class="p-3 text-center font-mono font-medium">' + fmt(trans_fee_cap) + '</td></tr>' +
+    '<tr><td class="p-3 font-bold text-[#1a1a1a]">月度总电费</td><td class="p-3 text-center font-mono font-bold text-[#1a1a1a] text-lg">¥ ' + fmt(total_two) + '</td><td class="p-3 text-center font-mono font-bold text-[#007AFF] text-lg">¥ ' + fmt(total_cap) + '</td></tr>' +
+    '</table></div>' +
+    '<p class="text-xs text-[#a1a1a6] mt-3">月小时数按 730h 计算（电力行业标准）</p>';
+
+  setTimeout(function() {
+    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+window.onload = calculate;
+</script>
+</body>
+</html>
