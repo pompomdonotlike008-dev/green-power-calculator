@@ -487,17 +487,56 @@ function unlockByFollow() {
   used.push(nick);
   localStorage.setItem('calc_used_nicks', JSON.stringify(used));
 
-  // 直接解锁，无需等待管理员授权
-  localStorage.setItem('calc_unlocked', 'true');
-  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
-  document.getElementById('successDesc').textContent = '欢迎使用，祝您用电愉快！';
-  document.getElementById('payStep1').classList.remove('active');
-  document.getElementById('payStep2').classList.add('active');
-  setTimeout(function(){ closePayment(); }, 1500);
-
-  // 后台通知管理员（不影响用户）
+  // 请求API解锁，根据模式自动判断
   var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
-  fetch(API + '/unlock?nick=' + encodeURIComponent(nick) + '&action=request', {method:'POST'}).catch(function(){});
+  fetch(API + '/unlock?nick=' + encodeURIComponent(nick))
+    .then(function(r){ return r.json(); })
+    .then(function(r){
+      if (r.unlocked) {
+        // 自动模式：立即解锁
+        localStorage.setItem('calc_unlocked', 'true');
+        document.getElementById('successTitle').textContent = '🎉 解锁成功！';
+        document.getElementById('successDesc').textContent = '欢迎使用，祝您用电愉快！';
+        document.getElementById('payStep1').classList.remove('active');
+        document.getElementById('payStep2').classList.add('active');
+        setTimeout(function(){ closePayment(); }, 1500);
+      } else {
+        // 手动模式：等待管理员授权
+        document.getElementById('successTitle').textContent = '⏳ 请求已发送';
+        document.getElementById('successDesc').textContent = '请等待管理员授权...（正在检测）';
+        document.getElementById('payStep1').classList.remove('active');
+        document.getElementById('payStep2').classList.add('active');
+        // 轮询检查
+        var checkCount = 0;
+        var checkInterval = setInterval(function() {
+          checkCount++;
+          fetch(API + '/unlock?nick=' + encodeURIComponent(nick) + '&action=check')
+            .then(function(r2){ return r2.json(); })
+            .then(function(r2){
+              if (r2.unlocked) {
+                clearInterval(checkInterval);
+                localStorage.setItem('calc_unlocked', 'true');
+                document.getElementById('successTitle').textContent = '🎉 授权成功！';
+                document.getElementById('successDesc').textContent = '管理员已授权，开始使用';
+                setTimeout(function(){ closePayment(); }, 1500);
+              } else if (checkCount > 120) {
+                clearInterval(checkInterval);
+                document.getElementById('successDesc').textContent = '请确认管理员已授权后刷新页面';
+              } else {
+                document.getElementById('successDesc').textContent = '⏳ 等待管理员授权...';
+              }
+            }).catch(function(){});
+        }, 3000);
+      }
+    }).catch(function(){
+      // API不可达时直接解锁（降级处理）
+      localStorage.setItem('calc_unlocked', 'true');
+      document.getElementById('successTitle').textContent = '🎉 解锁成功！';
+      document.getElementById('successDesc').textContent = '欢迎使用';
+      document.getElementById('payStep1').classList.remove('active');
+      document.getElementById('payStep2').classList.add('active');
+      setTimeout(function(){ closePayment(); }, 1500);
+    });
 function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6 || isNaN(code)) { alert('解锁码无效'); return; }
