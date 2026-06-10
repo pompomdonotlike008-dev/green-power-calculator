@@ -471,43 +471,26 @@ function closePayment() {
 }
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
-  if (!nick) { alert('请输入你的微信昵称'); return; }
-  // 管理员密钥：输入 key 直接免费用
-  if (nick.toLowerCase() === 'key') {
+  if (nick === '') { return; }
+  if (nick === 'key' || nick === 'KEY') {
     localStorage.setItem('calc_unlocked', 'true');
-    document.getElementById('successTitle').textContent = '🎉 管理员授权成功！';
-    document.getElementById('successDesc').textContent = '欢迎回来，王炸小纸条';
-    document.getElementById('payStep1').classList.remove('active');
-    document.getElementById('payStep2').classList.add('active');
-    setTimeout(function(){ closePayment(); }, 800);
+    closePayment();
     return;
   }
   var used = JSON.parse(localStorage.getItem('calc_used_nicks') || '[]');
-  if (used.indexOf(nick) >= 0) { alert('该昵称已使用过免费资格'); return; }
+  if (used.indexOf(nick) >= 0) { alert('已使用过'); return; }
   used.push(nick);
   localStorage.setItem('calc_used_nicks', JSON.stringify(used));
-
-  // 直接解锁，不与后端通信（手机端更快）
-  var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
   localStorage.setItem('calc_unlocked', 'true');
-  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
-  document.getElementById('successDesc').textContent = '欢迎使用，祝您用电愉快！';
-  document.getElementById('payStep1').classList.remove('active');
-  document.getElementById('payStep2').classList.add('active');
-  setTimeout(function(){ closePayment(); }, 1500);
-  // 在后台通知管理员（不影响使用）
-  fetch(API + '/unlock?nick=' + encodeURIComponent(nick), {signal: AbortSignal.timeout(5000)}).catch(function(){});
+  closePayment();
 }
 function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
-  if (!code || code.length !== 6 || isNaN(code)) { alert('解锁码无效'); return; }
-  var sum = parseInt(code[0])+parseInt(code[1])+parseInt(code[2])+parseInt(code[3])+parseInt(code[4])+parseInt(code[5]);
+  if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
+  var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
   if (sum % 3 !== 0) { alert('解锁码无效'); return; }
   localStorage.setItem('calc_unlocked', 'true');
-  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
-  document.getElementById('successDesc').textContent = '已获得使用权限';
-  document.getElementById('payStep1').classList.remove('active');
-  document.getElementById('payStep2').classList.add('active');
+  closePayment();
 }
 // 管理员工具：生成6位解锁码（F12 → Console → genUnlockCode()）
 function genUnlockCode() {
