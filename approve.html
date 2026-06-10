@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>授权管理 - 王炸小纸条</title>
+<style>
+  * { font-family: -apple-system, 'PingFang SC', sans-serif; box-sizing: border-box; }
+  body { background: #f5f5f7; margin: 0; padding: 16px; }
+  .card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  h1 { font-size: 22px; color: #1a1a1a; margin: 0 0 4px; }
+  .sub { font-size: 14px; color: #86868b; margin: 0 0 16px; }
+  .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .item:last-child { border-bottom: none; }
+  .nick { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+  .time { font-size: 12px; color: #999; }
+  .btn { background: #34C759; color: #fff; border: none; border-radius: 10px; padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .empty { text-align: center; padding: 40px 0; color: #c7c7cc; font-size: 15px; }
+  .refresh-btn { background: #007AFF; color: #fff; border: none; border-radius: 12px; padding: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 12px; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 14px; z-index: 999; display: none; }
+  .count { display: inline-block; background: #FF3B30; color: #fff; border-radius: 20px; padding: 2px 10px; font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="card">
+  <h1>🔑 授权管理</h1>
+  <p class="sub">用户在计算器提交授权请求后会出现在这里</p>
+  <button class="refresh-btn" onclick="loadPending()">🔄 刷新列表</button>
+  <div id="list">
+    <div class="empty">正在加载...</div>
+  </div>
+</div>
+
+<div class="card" style="text-align:center">
+  <p style="font-size:13px;color:#86868b;margin:0">检测到新请求时，点授权即可</p>
+  <p style="font-size:12px;color:#bbb;margin:8px 0 0">自动刷新的，不用一直点刷新</p>
+</div>
+
+<script>
+var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
+var PWD = 'wz2026';
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(function(){ t.style.display = 'none'; }, 2000);
+}
+
+async function loadPending() {
+  var listEl = document.getElementById('list');
+  try {
+    var resp = await fetch(API + '/admin?action=list&pwd=' + PWD);
+    var r = await resp.json();
+    if (!r.ok) { listEl.innerHTML = '<div class="empty">' + (r.error || '加载失败') + '</div>'; return; }
+    if (!r.pending || r.pending.length === 0) {
+      listEl.innerHTML = '<div class="empty">暂无待审批的授权请求<br><span style="font-size:12px">用户提交请求后会出现在这里</span></div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    r.pending.forEach(function(item) {
+      var div = document.createElement('div');
+      div.className = 'item';
+      var time = item.time ? item.time.slice(0,16).replace('T',' ') : '';
+      div.innerHTML = '<div><div class="nick">' + item.nick + '</div><div class="time">' + time + '</div></div>' +
+        '<button class="btn" onclick="approve(\'' + item.nick + '\', this)">✅ 授权</button>';
+      listEl.appendChild(div);
+    });
+    // 标题显示数量
+    document.querySelector('h1').innerHTML = '🔑 授权管理 <span class="count">' + r.pending.length + '</span>';
+  } catch(e) {
+    listEl.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>';
+  }
+}
+
+async function approve(nick, btn) {
+  btn.disabled = true; btn.textContent = '处理中...';
+  try {
+    var resp = await fetch(API + '/admin?action=approve&nick=' + encodeURIComponent(nick) + '&pwd=' + PWD);
+    var r = await resp.json();
+    if (r.ok) {
+      toast('✅ ' + nick + ' 已授权');
+      loadPending();
+    } else {
+      toast('❌ ' + (r.error || '失败'));
+      btn.disabled = false; btn.textContent = '✅ 授权';
+    }
+  } catch(e) {
+    toast('❌ ' + e.message);
+    btn.disabled = false; btn.textContent = '✅ 授权';
+  }
+}
+
+// 自动刷新
+loadPending();
+setInterval(loadPending, 15000);
+</script>
+</body>
+</html>
