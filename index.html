@@ -88,7 +88,7 @@
       <div style="background:#f5f5f7;border-radius:12px;padding:12px;margin-bottom:10px">
         <p style="font-size:13px;color:#555;font-weight:500;margin-bottom:6px">💎 赞赏20元继续使用</p>
         <img src="reward.png" style="width:120px;height:120px;border-radius:10px;margin:0 auto" alt="赞赏码">
-        <p style="font-size:10px;color:#999;margin-top:4px">赞赏后输入昵称提交，管理员收到通知即授权</p>
+        <p style="font-size:10px;color:#999;margin-top:4px">赞赏后输入昵称，提交即自动解锁</p>
       </div>
 
       <div style="display:flex;gap:8px;margin-top:12px">
@@ -487,38 +487,17 @@ function unlockByFollow() {
   used.push(nick);
   localStorage.setItem('calc_used_nicks', JSON.stringify(used));
 
-  // 请求授权（通知管理员）
-  var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
-  fetch(API + '/unlock?nick=' + encodeURIComponent(nick) + '&action=request', {method:'POST'}).catch(function(){});
-
-  // 开始轮询检查是否被授权
-  document.getElementById('successTitle').textContent = '⏳ 请求已发送';
-  document.getElementById('successDesc').textContent = '管理员已收到通知，请稍等片刻...（正在检测中）';
+  // 直接解锁，无需等待管理员授权
+  localStorage.setItem('calc_unlocked', 'true');
+  document.getElementById('successTitle').textContent = '🎉 解锁成功！';
+  document.getElementById('successDesc').textContent = '欢迎使用，祝您用电愉快！';
   document.getElementById('payStep1').classList.remove('active');
   document.getElementById('payStep2').classList.add('active');
+  setTimeout(function(){ closePayment(); }, 1500);
 
-  // 每隔3秒检查一次是否已授权
-  var checkCount = 0;
-  var checkInterval = setInterval(function() {
-    checkCount++;
-    fetch(API + '/unlock?nick=' + encodeURIComponent(nick) + '&action=check')
-      .then(function(r){ return r.json(); })
-      .then(function(r){
-        if (r.unlocked) {
-          clearInterval(checkInterval);
-          localStorage.setItem('calc_unlocked', 'true');
-          document.getElementById('successTitle').textContent = '🎉 授权成功！';
-          document.getElementById('successDesc').textContent = '管理员已授权，开始使用';
-          setTimeout(function(){ closePayment(); }, 1500);
-        } else if (checkCount > 40) {
-          clearInterval(checkInterval);
-          document.getElementById('successDesc').textContent = '检测超时，请确认管理员已授权后刷新页面';
-        } else {
-          document.getElementById('successDesc').textContent = '⏳ 正在等待管理员授权...（第' + checkCount + '次检测）';
-        }
-      }).catch(function(){});
-  }, 3000);
-}
+  // 后台通知管理员（不影响用户）
+  var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
+  fetch(API + '/unlock?nick=' + encodeURIComponent(nick) + '&action=request', {method:'POST'}).catch(function(){});
 function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6 || isNaN(code)) { alert('解锁码无效'); return; }
