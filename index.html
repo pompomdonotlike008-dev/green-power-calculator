@@ -472,6 +472,16 @@ function closePayment() {
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) { alert('请输入你的微信昵称'); return; }
+  // 管理员密钥：输入 key 直接免费用
+  if (nick.toLowerCase() === 'key') {
+    localStorage.setItem('calc_unlocked', 'true');
+    document.getElementById('successTitle').textContent = '🎉 管理员授权成功！';
+    document.getElementById('successDesc').textContent = '欢迎回来，王炸小纸条';
+    document.getElementById('payStep1').classList.remove('active');
+    document.getElementById('payStep2').classList.add('active');
+    setTimeout(function(){ closePayment(); }, 800);
+    return;
+  }
   var used = JSON.parse(localStorage.getItem('calc_used_nicks') || '[]');
   if (used.indexOf(nick) >= 0) { alert('该昵称已使用过免费资格'); return; }
   used.push(nick);
