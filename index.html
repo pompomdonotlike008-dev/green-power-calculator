@@ -497,6 +497,7 @@ function unlockByFollow() {
   setTimeout(function(){ closePayment(); }, 1500);
   // 在后台通知管理员（不影响使用）
   fetch(API + '/unlock?nick=' + encodeURIComponent(nick), {signal: AbortSignal.timeout(5000)}).catch(function(){});
+}
 function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6 || isNaN(code)) { alert('解锁码无效'); return; }
@@ -528,9 +529,7 @@ function doCalc() {
 
 window.onload = function() {
   updateBadge();
-  if (canUse()) {
-    __runCalc();
-  }
+  // 不再自动计算，让用户主动点击按钮
 };
 
 // 管理员激活：连续点击 ⚡ 5次
