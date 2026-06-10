@@ -94,25 +94,25 @@ function switchTab(tab) {
   else loadRecords();
 }
 
-// === 模式切换 ===
-async function checkMode() {
-  try {
-    var r = await fetch(API + '/mode');
-    var d = await r.json();
-    currentMode = d.mode || 'manual';
-  } catch(e) { currentMode = 'manual'; }
+// === 模式切换（本地 + 后端同步）===
+function checkMode() {
+  currentMode = localStorage.getItem('approve_mode') || 'manual';
+  // 尝试读取后端模式
+  fetch(API + '/mode').then(function(r){ return r.json(); }).then(function(d){
+    if (d.mode) { currentMode = d.mode; localStorage.setItem('approve_mode', d.mode); updateModeUI(); }
+  }).catch(function(){});
   updateModeUI();
 }
 
-async function toggleMode() {
+function toggleMode() {
   var newMode = currentMode === 'manual' ? 'auto' : 'manual';
-  try {
-    await fetch(API + '/mode?mode=' + newMode + '&pwd=' + PWD, {method:'POST'});
-    currentMode = newMode;
-    updateModeUI();
-    toast('已切换到' + (newMode === 'auto' ? '🟢 自动模式' : '🔴 手动模式'));
-    if (newMode === 'auto') { autoApproveAll(); }
-  } catch(e) { toast('切换失败'); }
+  currentMode = newMode;
+  localStorage.setItem('approve_mode', newMode);
+  updateModeUI();
+  toast('已切换到' + (newMode === 'auto' ? '🟢 自动模式' : '🔴 手动模式'));
+  // 尝试通知后端
+  fetch(API + '/mode?mode=' + newMode + '&pwd=' + PWD, {method:'POST'}).catch(function(){});
+  if (newMode === 'auto') { autoApproveAll(); }
 }
 
 function updateModeUI() {
