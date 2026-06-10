@@ -28,6 +28,13 @@
 <div class="card">
   <h1>🔑 授权管理</h1>
   <p class="sub">用户在计算器提交授权请求后会出现在这里</p>
+
+  <!-- 快速输入框：直接输入昵称授权 -->
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <input type="text" id="quickNick" placeholder="速批：直接输入昵称按授权" style="flex:1;padding:10px 14px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:15px;outline:none" onkeydown="if(event.key==='Enter')quickApprove()">
+    <button class="btn" onclick="quickApprove()" style="white-space:nowrap">⚡ 授权</button>
+  </div>
+
   <button class="refresh-btn" onclick="loadPending()">🔄 刷新列表</button>
   <div id="list">
     <div class="empty">正在加载...</div>
@@ -47,6 +54,21 @@ function toast(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg; t.style.display = 'block';
   setTimeout(function(){ t.style.display = 'none'; }, 2000);
+}
+
+// 快速授权：输入昵称直接授权
+async function quickApprove() {
+  var nick = document.getElementById('quickNick').value.trim();
+  if (!nick) { toast('请输入昵称'); return; }
+  var btn = document.querySelector('.btn');
+  btn.disabled = true; btn.textContent = '处理中...';
+  try {
+    var resp = await fetch(API + '/admin?action=approve&nick=' + encodeURIComponent(nick) + '&pwd=' + PWD);
+    var r = await resp.json();
+    if (r.ok) { toast('✅ ' + nick + ' 已授权'); document.getElementById('quickNick').value = ''; loadPending(); }
+    else { toast('❌ ' + (r.error || '失败')); }
+  } catch(e) { toast('❌ ' + e.message); }
+  btn.disabled = false; btn.textContent = '⚡ 授权';
 }
 
 async function loadPending() {
