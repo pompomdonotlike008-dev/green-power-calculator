@@ -489,6 +489,7 @@ function unlockByFollow() {
 
   // 请求API解锁，根据模式自动判断
   var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
+  // Try API, fallback to auto-unlock
   fetch(API + '/unlock?nick=' + encodeURIComponent(nick))
     .then(function(r){ return r.json(); })
     .then(function(r){
