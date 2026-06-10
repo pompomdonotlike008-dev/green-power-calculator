@@ -3,218 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>授权管理 - 王炸小纸条</title>
+<title>解锁码生成 - 王炸小纸条</title>
 <style>
-  * { font-family: -apple-system, 'PingFang SC', sans-serif; box-sizing: border-box; }
-  body { background: #f5f5f7; margin: 0; padding: 16px; }
-  .card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
-  h1 { font-size: 22px; color: #1a1a1a; margin: 0 0 4px; }
-  .sub { font-size: 14px; color: #86868b; margin: 0 0 16px; }
-  .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-  .item:last-child { border-bottom: none; }
-  .nick { font-size: 16px; font-weight: 600; color: #1a1a1a; }
-  .time { font-size: 12px; color: #999; }
-  .btn { background: #34C759; color: #fff; border: none; border-radius: 10px; padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .empty { text-align: center; padding: 40px 0; color: #c7c7cc; font-size: 15px; }
-  .refresh-btn { background: #007AFF; color: #fff; border: none; border-radius: 12px; padding: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 12px; }
-  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 14px; z-index: 999; display: none; }
-  .count { display: inline-block; background: #FF3B30; color: #fff; border-radius: 20px; padding: 2px 10px; font-size: 13px; margin-left: 6px; }
-  /* Toggle Switch */
-  .switch-wrap { display: flex; align-items: center; justify-content: space-between; background: #f5f5f7; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
-  .switch-label { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-  .switch-desc { font-size: 12px; color: #86868b; margin-top: 2px; }
-  .switch { width: 52px; height: 28px; background: #e5e5ea; border-radius: 14px; position: relative; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
-  .switch.on { background: #34C759; }
-  .switch::after { content: ''; position: absolute; width: 24px; height: 24px; background: #fff; border-radius: 12px; top: 2px; left: 2px; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-  .switch.on::after { left: 26px; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 14px; }
-  .tab { flex: 1; text-align: center; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; background: #f0f0f0; color: #86868b; border: none; }
-  .tab.active { background: #007AFF; color: #fff; }
-  .page { display: none; }
-  .page.active { display: block; }
+*{font-family:-apple-system,'PingFang SC',sans-serif;box-sizing:border-box}
+body{background:#f5f5f7;margin:0;padding:16px;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:20px;padding:32px;max-width:360px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center}
+input{width:100%;padding:14px 16px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:16px;outline:none;box-sizing:border-box;text-align:center;margin:8px 0}
+input:focus{border-color:#007AFF}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin:4px 0}
+.btn-green{background:#34C759;color:#fff}
+.btn-red{background:#ff3b30;color:#fff}
+.code{font-size:32px;font-weight:800;letter-spacing:6px;color:#007AFF;margin:16px 0;padding:20px;background:#f0f7ff;border-radius:12px}
+.hidden{display:none}
+.step{display:block}
+.step.hidden{display:none}
+.hint{font-size:12px;color:#86868b;margin-top:8px}
 </style>
 </head>
 <body>
-
-<div class="toast" id="toast"></div>
-
 <div class="card">
-  <h1>🔑 授权管理</h1>
-  <p class="sub">· 忙时开自动，闲时关手动 · 谁用了都能查</p>
+  <div style="font-size:48px">🔑</div>
+  <h2 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:8px 0">解锁码生成</h2>
+  <p style="font-size:13px;color:#86868b;margin-bottom:16px">有人付款后，生成解锁码发给他</p>
 
-  <!-- 自动/手动 开关 -->
-  <div class="switch-wrap">
-    <div>
-      <div class="switch-label" id="modeLabel">🔴 手动模式</div>
-      <div class="switch-desc" id="modeDesc">新用户需要你点授权</div>
-    </div>
-    <div class="switch" id="modeSwitch" onclick="toggleMode()"></div>
+  <div id="s1" class="step">
+    <input type="password" id="pwd" placeholder="管理员密码" maxlength="20">
+    <button class="btn btn-green" onclick="login()">登录</button>
+    <p class="hint">首次使用请先设置密码</p>
   </div>
 
-  <!-- 快速批 -->
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input type="text" id="quickNick" placeholder="速批：输入昵称按授权" style="flex:1;padding:10px 14px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:15px;outline:none" onkeydown="if(event.key==='Enter')quickApprove()">
-    <button class="btn" onclick="quickApprove()" style="white-space:nowrap">⚡ 授权</button>
-  </div>
-
-  <!-- 选项卡 -->
-  <div class="tab-bar">
-    <button class="tab active" id="tabPending" onclick="switchTab('pending')">⏳ 待审批</button>
-    <button class="tab" id="tabRecords" onclick="switchTab('records')">📋 记录</button>
-  </div>
-
-  <!-- 待审批列表 -->
-  <div id="pendingPage" class="page active">
-    <div id="pendingList"><div class="empty">加载中...</div></div>
-  </div>
-
-  <!-- 授权记录 -->
-  <div id="recordsPage" class="page">
-    <div id="recordsList"><div class="empty">加载中...</div></div>
+  <div id="s2" class="step hidden">
+    <div class="code" id="codeDisplay">------</div>
+    <button class="btn btn-green" onclick="genCode()" style="padding:18px;font-size:18px">⚡ 生成解锁码</button>
+    <p class="hint">生成6位数字解锁码，发给用户即可</p>
+    <p style="font-size:11px;color:#bbb;margin-top:12px;cursor:pointer" onclick="logout()">切换账号</p>
   </div>
 </div>
 
 <script>
-var API = 'https://vercel-deploy-3umdat3mq-xianning-wang-s-projects.vercel.app/api';
-var PWD = 'wz2026';
-var currentMode = 'manual';
-
-function toast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block';
-  setTimeout(function(){ t.style.display = 'none'; }, 2000);
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  document.getElementById(tab + 'Page').classList.add('active');
-  if (tab === 'pending') loadPending();
-  else loadRecords();
-}
-
-// === 模式切换（本地 + 后端同步）===
-function checkMode() {
-  currentMode = localStorage.getItem('approve_mode') || 'manual';
-  // 尝试读取后端模式
-  fetch(API + '/mode').then(function(r){ return r.json(); }).then(function(d){
-    if (d.mode) { currentMode = d.mode; localStorage.setItem('approve_mode', d.mode); updateModeUI(); }
-  }).catch(function(){});
-  updateModeUI();
-}
-
-function toggleMode() {
-  var newMode = currentMode === 'manual' ? 'auto' : 'manual';
-  currentMode = newMode;
-  localStorage.setItem('approve_mode', newMode);
-  updateModeUI();
-  toast('已切换到' + (newMode === 'auto' ? '🟢 自动模式' : '🔴 手动模式'));
-  // 尝试通知后端
-  fetch(API + '/mode?mode=' + newMode + '&pwd=' + PWD, {method:'POST'}).catch(function(){});
-  if (newMode === 'auto') { autoApproveAll(); }
-}
-
-function updateModeUI() {
-  var sw = document.getElementById('modeSwitch');
-  var lbl = document.getElementById('modeLabel');
-  var desc = document.getElementById('modeDesc');
-  if (currentMode === 'auto') {
-    sw.classList.add('on');
-    lbl.textContent = '🟢 自动模式';
-    desc.textContent = '新用户提交后自动授权，无需操作';
-  } else {
-    sw.classList.remove('on');
-    lbl.textContent = '🔴 手动模式';
-    desc.textContent = '新用户需要你点授权';
+function login() {
+  var p = document.getElementById('pwd').value;
+  var saved = localStorage.getItem('admin_pwd_hash');
+  if (!saved) {
+    if (p.length < 4) { alert('密码至少4位'); return; }
+    localStorage.setItem('admin_pwd_hash', btoa(p));
+    show(2); return;
   }
+  if (btoa(p) === saved) { show(2); }
+  else { alert('密码错误'); }
 }
 
-// === 自动授权所有待审批 ===
-async function autoApproveAll() {
-  try {
-    var resp = await fetch(API + '/admin?action=list&pwd=' + PWD);
-    var r = await resp.json();
-    if (r.pending && r.pending.length > 0) {
-      for (var item of r.pending) {
-        await fetch(API + '/admin?action=approve&nick=' + encodeURIComponent(item.nick) + '&pwd=' + PWD);
-      }
-      toast('已自动授权 ' + r.pending.length + ' 人');
-      loadPending();
-    }
-  } catch(e) {}
+function genCode() {
+  var c = '';
+  for (var i = 0; i < 6; i++) c += Math.floor(Math.random() * 10);
+  var sum = parseInt(c[0])+parseInt(c[1])+parseInt(c[2])+parseInt(c[3])+parseInt(c[4])+parseInt(c[5]);
+  if (sum % 3 !== 0) return genCode();
+  document.getElementById('codeDisplay').textContent = c;
 }
 
-// === 加载待审批 ===
-async function loadPending() {
-  var el = document.getElementById('pendingList');
-  try {
-    var resp = await fetch(API + '/admin?action=list&pwd=' + PWD);
-    var r = await resp.json();
-    if (!r.ok) { el.innerHTML = '<div class="empty">' + (r.error || '失败') + '</div>'; return; }
-    if (!r.pending || r.pending.length === 0) {
-      el.innerHTML = '<div class="empty">✅ 暂无待审批<br><span style="font-size:12px">用户提交后会出现在这里</span></div>';
-      return;
-    }
-    el.innerHTML = '';
-    r.pending.forEach(function(item) {
-      var div = document.createElement('div'); div.className = 'item';
-      var time = item.time ? item.time.slice(0,16).replace('T',' ') : '';
-      div.innerHTML = '<div><div class="nick">' + item.nick + '</div><div class="time">' + time + '</div></div>' +
-        '<button class="btn" onclick="approve(\'' + item.nick.replace(/'/g,"\\'") + '\', this)">✅ 授权</button>';
-      el.appendChild(div);
-    });
-    document.querySelector('h1').innerHTML = '🔑 授权管理 <span class="count">' + r.pending.length + '</span>';
-  } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
+function show(n) {
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.add('hidden'); });
+  document.getElementById('s' + n).classList.remove('hidden');
 }
 
-async function approve(nick, btn) {
-  btn.disabled = true; btn.textContent = '处理中...';
-  try {
-    var resp = await fetch(API + '/admin?action=approve&nick=' + encodeURIComponent(nick) + '&pwd=' + PWD);
-    var r = await resp.json();
-    if (r.ok) { toast('✅ ' + nick + ' 已授权'); loadPending(); loadRecords(); }
-    else { toast('❌ ' + (r.error || '失败')); btn.disabled = false; btn.textContent = '✅ 授权'; }
-  } catch(e) { toast('❌ ' + e.message); btn.disabled = false; btn.textContent = '✅ 授权'; }
+function logout() {
+  if (confirm('清除密码？')) { localStorage.removeItem('admin_pwd_hash'); show(1); }
 }
 
-async function quickApprove() {
-  var nick = document.getElementById('quickNick').value.trim();
-  if (!nick) { toast('请输入昵称'); return; }
-  var btn = document.querySelector('.btn');
-  btn.disabled = true; btn.textContent = '处理中...';
-  try {
-    var resp = await fetch(API + '/admin?action=approve&nick=' + encodeURIComponent(nick) + '&pwd=' + PWD);
-    var r = await resp.json();
-    if (r.ok) { toast('✅ ' + nick + ' 已授权'); document.getElementById('quickNick').value = ''; loadPending(); }
-    else { toast('❌ ' + (r.error || '失败')); }
-  } catch(e) { toast('❌ ' + e.message); }
-  btn.disabled = false; btn.textContent = '⚡ 授权';
-}
-
-// === 加载授权记录 ===
-async function loadRecords() {
-  var el = document.getElementById('recordsList');
-  try {
-    var resp = await fetch(API + '/admin?action=records&pwd=' + PWD);
-    var r = await resp.json();
-    if (!r.ok || !r.records || r.records.length === 0) {
-      el.innerHTML = '<div class="empty">暂无授权记录</div>'; return;
-    }
-    el.innerHTML = '';
-    r.records.slice().reverse().slice(0, 50).forEach(function(item) {
-      var div = document.createElement('div'); div.className = 'item';
-      var time = item.time ? item.time.slice(0,16).replace('T',' ') : '';
-      div.innerHTML = '<div><div class="nick">' + item.nick + '</div><div class="time">' + time + '</div></div>';
-      el.appendChild(div);
-    });
-  } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
-}
-
-// 启动
-checkMode();
-loadPending();
-setInterval(loadPending, 12000);
+if (localStorage.getItem('admin_pwd_hash')) show(2);
 </script>
 </body>
 </html>
