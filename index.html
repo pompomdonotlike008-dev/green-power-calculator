@@ -481,10 +481,7 @@ function unlockByFollow() {
   used.push(nick);
   localStorage.setItem('calc_used_nicks', JSON.stringify(used));
   localStorage.setItem('calc_nick', nick);
-  localStorage.setItem('calc_waiting', 'true');
   closePayment();
-  // 通知管理员有新用户
-  fetch('https://vercel-deploy-nine-pearl.vercel.app/api/admin?action=request&nick=' + encodeURIComponent(nick), {method:'POST', mode:'no-cors'}).catch(function(){});
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
@@ -503,28 +500,16 @@ function genUnlockCode() {
 
 // 计算入口（带付费检查）
 function doCalc() {
-  var waiting = localStorage.getItem('calc_waiting');
-  if (waiting === 'true') {
-    alert('⏳ 管理员尚未授权，请等待授权后点击"开始计算"');
-    // 尝试检查是否已被授权
-    var nick = localStorage.getItem('calc_nick');
-    if (nick) {
-      fetch('https://vercel-deploy-nine-pearl.vercel.app/api/admin?action=check&nick=' + encodeURIComponent(nick)).then(function(r){return r.json();}).then(function(d){
-        if (d.approved) {
-          localStorage.setItem('calc_unlocked', 'true');
-          localStorage.removeItem('calc_waiting');
-          alert('✅ 已获得授权，请再次点击"开始计算"');
-        }
-      }).catch(function(){});
-    }
-    return;
-  }
-  if (localStorage.getItem('calc_unlocked') || getUsage() < FREE_USES) {
-    if (getUsage() < FREE_USES) addUsage();
-    __runCalc();
-  } else {
-    showPaymentWall();
-  }
+  var unlocked = localStorage.getItem('calc_unlocked') || '';
+  if (unlocked) { __runCalc(); return; }
+  if (getUsage() < FREE_USES) { addUsage(); __runCalc(); return; }
+  // Not authorized - show unlock code input
+  var code = prompt('⏳ 管理员尚未授权，请输入解锁码：');
+  if (!code || code.length !== 6 || isNaN(code)) { showPaymentWall(); return; }
+  var sum = 0; for (var i=0;i<6;i++) sum += parseInt(code[i]);
+  if (sum % 3 !== 0) { alert('解锁码无效，请联系管理员'); showPaymentWall(); return; }
+  localStorage.setItem('calc_unlocked', 'true');
+  __runCalc();
 }
 // 管理员激活：连续点击 ⚡ 5次
 var adminClicks = 0;
