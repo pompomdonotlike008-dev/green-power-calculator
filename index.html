@@ -462,7 +462,7 @@ function showPaymentWall() {
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
   updateBadge();
-  if (canUse()) __runCalc();
+  if (canUse()) { document.getElementById('results').style.display = 'none'; document.getElementById('liveSummary').style.display = 'none'; __runCalc(); }
 }
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
@@ -511,7 +511,9 @@ function startCheck(nick) {
       if (!r.ok) return;
       r.json().then(function(d){
         try {
-          var list = JSON.parse(atob(d.content));
+          var raw3 = atob(d.content);
+          var list;
+          try { list = JSON.parse(decodeURIComponent(escape(raw3))); } catch(e) { list = JSON.parse(raw3); }
           for (var i=0;i<list.length;i++) { if (list[i].nick === nick) {
             clearInterval(intv);
             localStorage.setItem('calc_unlocked', 'true');
@@ -546,7 +548,9 @@ function doCalc() {
         if (!r.ok) { alert('⏳ 管理员尚未授权'); return; }
         r.json().then(function(d){
           try {
-            var list = JSON.parse(atob(d.content));
+            var raw4 = atob(d.content);
+            var list;
+            try { list = JSON.parse(decodeURIComponent(escape(raw4))); } catch(e) { list = JSON.parse(raw4); }
             for (var i=0;i<list.length;i++) {
               if (list[i].nick === nick) {
                 localStorage.setItem('calc_unlocked', 'true');
