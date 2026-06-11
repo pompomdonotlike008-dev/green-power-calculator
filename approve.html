@@ -124,10 +124,15 @@ async function loadPending() {
   var el = document.getElementById('list');
   try {
     var r = await gh('unlock_data/pending/');
-    if (!r.ok) { el.innerHTML = '<div class="empty">读取失败，检查 Token 是否正确</div>'; return; }
+    if (!r.ok) {
+      var errMsg = '读取失败';
+      try { var errData = await r.json(); errMsg += ' (' + r.status + (errData.message ? ': ' + errData.message : '') + ')'; } catch(e) {}
+      el.innerHTML = '<div class="empty">' + errMsg + '<br><span style="font-size:12px">确认 Token 正确且未过期</span></div>';
+      return;
+    }
     var data = await r.json();
     if (!Array.isArray(data)) { el.innerHTML = '<div class="empty">暂无待审批</div>'; return; }
-    var files = data.filter(function(f){ return f.name && f.name.endsWith('.json'); });
+    var files = data.filter(function(f){ return f.name && f.name.endsWith('.json') && f.name !== '.gitkeep'; });
     if (files.length === 0) { el.innerHTML = '<div class="empty">✅ 暂无待审批</div>'; return; }
 
     var items = [];
