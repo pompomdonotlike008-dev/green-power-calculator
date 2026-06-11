@@ -501,7 +501,7 @@ function checkApproval(nick) {
       headers: {Accept: 'application/vnd.github.v3+json'}
     }).then(function(r){ return r.json(); }).then(function(data){
       if (!Array.isArray(data)) return;
-      Promise.all(data.filter(function(f){ return f.name && f.name.endsWith('.json'); }).map(function(f){
+      Promise.all(data.filter(function(f){ return f.name && f.name.endsWith('.json') && f.name !== '.gitkeep'; }).map(function(f){
         return fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved/' + f.name)
           .then(function(r2){ return r2.json(); }).then(function(d){
             try { var info = JSON.parse(atob(d.content)); return info.nick === nick; } catch(e) { return false; }
