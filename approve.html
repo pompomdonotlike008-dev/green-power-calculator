@@ -59,19 +59,21 @@ async function ld() {
     if (!items.length) { el.innerHTML = '<div class="empty">✅ 暂无</div>'; return; }
     el.innerHTML = '';
     items.forEach(function(item,i){
-      el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div><div class="time">'+(item.time?item.time.slice(5,16).replace('T',' '):'')+'</div></div><button class="btn" onclick="ap('+i+')">✅ 授权</button></div>';
+      el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div><div class="time">'+(item.time?item.time.slice(5,16).replace('T',' '):'')+'</div></div><button class="btn" onclick="ap(\''+item.nick.replace(/'/g,"\\'")+'\','+i+')">✅ 授权</button></div>';
     });
     if (MODE==='a') for(var i=items.length-1;i>=0;i--) ap(i);
   } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
-async function ap(i) {
+async function ap(nick, i) {
   try {
     var r = await gh('unlock_data/pending_list.json');
     var d = await r.json();
     var list = JSON.parse(atob(d.content));
-    if (i>=list.length) return;
-    var item = list.splice(i,1)[0];
+    var idx = -1;
+    for (var j=0; j<list.length; j++) { if (list[j].nick === nick) { idx = j; break; } }
+    if (idx < 0) return;
+    var item = list.splice(idx,1)[0];
     if (list.length) await gh('unlock_data/pending_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main', sha:d.sha});
     else await gh('unlock_data/pending_list.json', 'DELETE', {message:'u', sha:d.sha, branch:'main'});
     var ar = await gh('unlock_data/approved_list.json');
