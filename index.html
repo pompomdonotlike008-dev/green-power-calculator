@@ -258,7 +258,7 @@
     </div>
 
     <div class="text-center mt-6">
-      <button class="bg-[#007AFF] text-white border-none rounded-xl px-10 py-3.5 text-base font-bold cursor-pointer transition-all hover:bg-[#0066d6] hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]" onclick="doCalc()">
+      <button id="calcBtn" class="bg-[#007AFF] text-white border-none rounded-xl px-10 py-3.5 text-base font-bold cursor-pointer transition-all hover:bg-[#0066d6] hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98]" onclick="doCalc()">
         ⚡ 开始计算
       </button>
     </div>
@@ -525,6 +525,7 @@ function startCheck() {
               clearInterval(intv);
               localStorage.setItem('calc_unlocked', 'true');
               localStorage.removeItem('calc_waiting');
+              resetBtn();
               alert('✅ 管理员已授权，请点击"开始计算"！');
               return;
             }
@@ -534,7 +535,16 @@ function startCheck() {
     }).catch(function(){});
   }, 4000);
   setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
-}function adminUnlock() {
+}
+function resetBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; }
+}
+function waitBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (btn) { btn.textContent = '⏳ 等待授权...'; btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; btn.style.cursor = 'not-allowed'; }
+}
+function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
   var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
@@ -558,9 +568,10 @@ function adminClick() {
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
 function doCalc() {
-  // 已解锁 → 算，算完后清除解锁（下次还要授权）
+  // 已解锁 → 算一次，用完即锁
   if (localStorage.getItem('calc_unlocked')) {
     localStorage.removeItem('calc_unlocked');
+    localStorage.removeItem('calc_ticket');
     __runCalc(); return;
   }
   // 首次免费 → 算
@@ -568,38 +579,49 @@ function doCalc() {
     localStorage.setItem('calc_done', 'true');
     __runCalc(); return;
   }
-  // 等待授权中 → 检测
+  // 等待授权中 → 按钮灰色 + 提示
   if (localStorage.getItem('calc_waiting') === 'true') {
+    waitBtn();
     var nick = localStorage.getItem('calc_nick');
     if (nick) {
       var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
       fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
         headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
       }).then(function(r){
-        if (!r.ok) { alert('⏳ 管理员尚未授权'); return; }
+        if (!r.ok) return;
         r.json().then(function(d){
           try {
             var raw = atob(d.content);
             var list;
             try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+            var ticket = localStorage.getItem('calc_ticket');
             for (var i=0;i<list.length;i++) {
-              if (list[i].nick === nick) {
+              if (ticket && list[i].ticket === ticket) {
                 localStorage.setItem('calc_unlocked', 'true');
                 localStorage.removeItem('calc_waiting');
+                resetBtn();
                 alert('✅ 已授权！点击"开始计算"查看');
                 return;
               }
             }
-            alert('⏳ 管理员尚未授权');
-          } catch(e) { alert('⏳ 管理员尚未授权'); }
+          } catch(e) {}
         });
-      }).catch(function(){ alert('⏳ 管理员尚未授权'); });
+      }).catch(function(){});
     }
     return;
   }
   // 弹窗
   showPaymentWall();
-}function adminUnlock() {
+}
+function resetBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; }
+}
+function waitBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (btn) { btn.textContent = '⏳ 等待授权...'; btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; btn.style.cursor = 'not-allowed'; }
+}
+function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
   var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
