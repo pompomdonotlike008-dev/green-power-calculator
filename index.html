@@ -449,16 +449,14 @@ function __runCalc() {
 var API_URL = 'https://vercel-deploy-me7izouw1-xianning-wang-s-projects.vercel.app/api';
 var FREE_USES = 1;
 
-// 🔥 新用户免费用一次，老用户保留免费资格
-var VER = 'v8';
+// 🔥 每个用户都有1次免费机会
+var VER = 'v9';
 var oldVer = localStorage.getItem('calc_ver');
 if (oldVer !== VER) {
-  // 清空全部，确保首次免费
   localStorage.clear();
   localStorage.setItem('calc_ver', VER);
-  localStorage.setItem('calc_free', '1');
 }
-// 确保免费标记存在
+// 确保免费券存在（新用户或升级用户都有）
 if (!localStorage.getItem('calc_free')) {
   localStorage.setItem('calc_free', '1');
 }
