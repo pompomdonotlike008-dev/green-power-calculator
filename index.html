@@ -552,9 +552,7 @@ function adminClick() {
   }
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
-</script>
-</body>
-</html>function doCalc() {
+function doCalc() {
   // 已解锁 → 算，算完后清除解锁（下次还要授权）
   if (localStorage.getItem('calc_unlocked')) {
     localStorage.removeItem('calc_unlocked');
@@ -607,18 +605,6 @@ function adminClick() {
 
 // 计算入口（带付费检查）
 // 管理员激活：连续点击 ⚡ 5次
-var adminClicks = 0;
-function adminClick() {
-  adminClicks++;
-  if (adminClicks >= 5) {
-    localStorage.setItem('calc_unlocked', 'admin');
-    document.getElementById('usageBadge').textContent = '👑 管理员';
-    adminClicks = 0;
-    closePayment();
-    __runCalc();
-  }
-  setTimeout(function(){ adminClicks = 0; }, 3000);
-}
 </script>
 </body>
 </html>
