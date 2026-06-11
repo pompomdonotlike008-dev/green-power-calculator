@@ -470,7 +470,10 @@ function getUsage() {
 function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) {
-    badge.textContent = '✅ 已解锁'; badge.style.display = 'block'; return;
+    badge.textContent = '🔓 已授权 · 请点击计算'; badge.style.display = 'block'; return;
+  }
+  if (localStorage.getItem('auto_mode') === 'on') {
+    badge.textContent = '🟢 自动模式'; badge.style.display = 'block'; return;
   }
   if (localStorage.getItem('calc_free') === '1') {
     badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block';
@@ -591,12 +594,8 @@ function adminClick() {
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
 function doCalc() {
-  // 检查是否自动模式（管理员开启了免授权）
-  if (localStorage.getItem('calc_unlocked')) {
-    __runCalc(); return;
-  }
-  var am = localStorage.getItem('auto_mode');
-  if (am === 'on') {
+  // 自动模式 → 直接算
+  if (localStorage.getItem('auto_mode') === 'on') {
     __runCalc(); return;
   }
   // 免费券可用 → 用掉，直接算
@@ -606,7 +605,7 @@ function doCalc() {
     __runCalc(); return;
   }
   // 已解锁 → 算一次，用完即锁
-  if (localStorage.getItem('calc_unlocked')) {
+  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
     localStorage.removeItem('calc_unlocked');
     localStorage.removeItem('calc_ticket');
     __runCalc(); return;
