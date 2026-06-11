@@ -3,77 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>解锁码生成 - 王炸小纸条</title>
+<title>授权管理 - 王炸小纸条</title>
 <style>
 *{font-family:-apple-system,'PingFang SC',sans-serif;box-sizing:border-box}
-body{background:#f5f5f7;margin:0;padding:16px;display:flex;min-height:100vh;align-items:center;justify-content:center}
-.card{background:#fff;border-radius:20px;padding:32px;max-width:360px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center}
-input{width:100%;padding:14px 16px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:16px;outline:none;box-sizing:border-box;text-align:center;margin:8px 0}
-input:focus{border-color:#007AFF}
-.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin:4px 0}
-.btn-green{background:#34C759;color:#fff}
-.btn-blue{background:#007AFF;color:#fff}
-.code{font-size:40px;font-weight:800;letter-spacing:8px;color:#007AFF;margin:16px 0;padding:24px;background:#f0f7ff;border-radius:12px}
-.hidden{display:none}
-.hint{font-size:12px;color:#86868b;margin-top:8px}
+body{background:#f5f5f7;margin:0;padding:16px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+h1{font-size:22px;color:#1a1a1a;margin:0 0 4px}
+.sub{font-size:14px;color:#86868b;margin:0 0 16px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.item:last-child{border-bottom:none}
+.nick{font-size:16px;font-weight:600;color:#1a1a1a}
+.time{font-size:12px;color:#999}
+.btn{background:#34C759;color:#fff;border:none;border-radius:10px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer}
+.empty{text-align:center;padding:40px 0;color:#c7c7cc;font-size:15px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;z-index:999;display:none}
+.switch-wrap{display:flex;align-items:center;justify-content:space-between;background:#f5f5f7;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.switch-label{font-size:15px;font-weight:600;color:#1a1a1a}
+.switch-desc{font-size:12px;color:#86868b;margin-top:2px}
+.switch{width:52px;height:28px;background:#e5e5ea;border-radius:14px;position:relative;cursor:pointer;transition:0.2s;flex-shrink:0}
+.switch.on{background:#34C759}
+.switch::after{content:'';width:24px;height:24px;background:#fff;border-radius:12px;position:absolute;top:2px;left:2px;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.switch.on::after{left:26px}
 </style>
 </head>
 <body>
-<div class="card">
-  <div style="font-size:48px">🔑</div>
-  <h2 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:8px 0">解锁码生成</h2>
-  <p style="font-size:13px;color:#86868b;margin-bottom:16px">有人付了20元，就帮他生成一个解锁码</p>
-
-  <div class="step" id="s1">
-    <input type="password" id="pwd" placeholder="设置管理员密码" maxlength="20">
-    <button class="btn btn-green" onclick="login()">进入</button>
-    <p class="hint">首次输入任意密码即可设置</p>
-  </div>
-
-  <div class="step hidden" id="s2">
-    <div class="code" id="display">------</div>
-    <button class="btn btn-green" onclick="gen()">⚡ 生成解锁码</button>
-    <p class="hint">把6位数字发给用户，他在计算器输入即可解锁</p>
-    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
-    <p style="font-size:13px;color:#1a1a1a;font-weight:600;margin:0 0 8px">检查已生成的解锁码</p>
-    <div id="history" style="font-size:12px;color:#86868b"></div>
-  </div>
+<div class="toast" id="toast"></div>
+<div class="card" id="setupCard">
+  <h1>🔐 首次设置</h1>
+  <p class="sub">输入你的 GitHub Token，用于自动授权</p>
+  <input type="password" id="tokenInput" style="width:100%;padding:12px 14px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px" placeholder="输入 GitHub Token">
+  <input type="password" id="pwdInput" style="width:100%;padding:12px 14px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px" placeholder="设置管理密码（防误开）">
+  <button class="btn" style="width:100%" onclick="saveSetup()">保存设置</button>
+  <p style="font-size:12px;color:#999;margin-top:8px">Token 存在你手机本地，不会上传到任何地方</p>
 </div>
+
+<div class="card" id="mainCard" style="display:none">
+  <h1>🔑 授权管理</h1>
+  <p class="sub">用户提交后自动出现，你点授权他就能看结果</p>
+  <div class="switch-wrap">
+    <div>
+      <div class="switch-label" id="modeLabel">🔴 手动模式</div>
+      <div class="switch-desc" id="modeDesc">每个用户需要你点授权</div>
+    </div>
+    <div class="switch" id="modeSwitch" onclick="toggleMode()"></div>
+  </div>
+  <div id="list"><div class="empty">加载中...</div></div>
+  <p style="font-size:11px;color:#bbb;margin-top:8px;cursor:pointer;text-align:center" onclick="resetSetup()">重新设置</p>
+</div>
+
 <script>
-function login() {
-  var p = document.getElementById('pwd').value;
-  var saved = localStorage.getItem('admin_pw');
-  if (!saved) {
-    if (p.length < 4) { alert('密码至少4位'); return; }
-    localStorage.setItem('admin_pw', p);
-    go(2); return;
-  }
-  if (p === saved) { go(2); }
-  else { alert('密码错误'); }
+var TOKEN = '';
+var PWD = '';
+
+function saveSetup() {
+  TOKEN = document.getElementById('tokenInput').value.trim();
+  var pwd = document.getElementById('pwdInput').value.trim();
+  if (!TOKEN || !pwd) { alert('请填写 Token 和密码'); return; }
+  if (TOKEN.indexOf('ghp_') !== 0 && TOKEN.indexOf('github_pat_') !== 0) { alert('Token 格式不对，应以 ghp_ 开头'); return; }
+  localStorage.setItem('gh_token', TOKEN);
+  localStorage.setItem('gh_pwd', pwd);
+  document.getElementById('setupCard').style.display = 'none';
+  document.getElementById('mainCard').style.display = 'block';
+  start();
 }
-function go(n) {
-  document.querySelectorAll('.step').forEach(function(s){ s.classList.add('hidden'); });
-  document.getElementById('s'+n).classList.remove('hidden');
-  if (n === 2) showHistory();
+
+function resetSetup() {
+  if (!confirm('清除设置？')) return;
+  localStorage.removeItem('gh_token');
+  localStorage.removeItem('gh_pwd');
+  document.getElementById('setupCard').style.display = 'block';
+  document.getElementById('mainCard').style.display = 'none';
 }
-function gen() {
-  var c = '';
-  for (var i=0;i<6;i++) c += Math.floor(Math.random()*10);
-  var s = parseInt(c[0])+parseInt(c[1])+parseInt(c[2])+parseInt(c[3])+parseInt(c[4])+parseInt(c[5]);
-  if (s%3!==0) return gen();
-  document.getElementById('display').textContent = c;
-  // Save history
-  var h = JSON.parse(localStorage.getItem('codes') || '[]');
-  h.unshift({code:c, time:new Date().toLocaleString()});
-  if (h.length > 20) h.pop();
-  localStorage.setItem('codes', JSON.stringify(h));
-  showHistory();
+
+function T(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(function(){t.style.display='none';},2000); }
+
+var mode = localStorage.getItem('gh_mode') || 'manual';
+function toggleMode() {
+  mode = mode === 'auto' ? 'manual' : 'auto';
+  localStorage.setItem('gh_mode', mode);
+  updateUI();
+  T('已切到' + (mode==='auto'?'自动模式':'手动模式'));
+  if (mode === 'auto') loadPending();
 }
-function showHistory() {
-  var h = JSON.parse(localStorage.getItem('codes') || '[]');
-  document.getElementById('history').innerHTML = h.length ? h.map(function(i){ return '<div style="padding:4px 0"><b>'+i.code+'</b> <span style="color:#999">'+i.time+'</span></div>'; }).join('') : '暂无记录';
+function updateUI() {
+  var sw = document.getElementById('modeSwitch');
+  var lbl = document.getElementById('modeLabel');
+  var desc = document.getElementById('modeDesc');
+  if (mode === 'auto') { sw.classList.add('on'); lbl.textContent = '🟢 自动模式'; desc.textContent = '用户提交后自动授权'; }
+  else { sw.classList.remove('on'); lbl.textContent = '🔴 手动模式'; desc.textContent = '每个用户需要你点授权'; }
 }
-if (localStorage.getItem('admin_pw')) { go(2); }
+updateUI();
+
+function gh(path) {
+  return fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/' + path, {
+    headers: { Authorization: 'Bearer ' + TOKEN, Accept: 'application/vnd.github.v3+json' }
+  });
+}
+
+function ghPut(path, content, sha) {
+  var data = { message: 'update', content: btoa(unescape(encodeURIComponent(content))), branch: 'main' };
+  if (sha) data.sha = sha;
+  return fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/' + path, {
+    method: 'PUT', headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+
+function ghDelete(path, sha) {
+  return fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/' + path, {
+    method: 'DELETE', headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'delete', sha: sha, branch: 'main' })
+  });
+}
+
+function base64decode(str) {
+  try { return decodeURIComponent(escape(atob(str))); } catch(e) { return atob(str); }
+}
+
+async function loadPending() {
+  var el = document.getElementById('list');
+  try {
+    var r = await gh('unlock_data/pending/');
+    if (!r.ok) { el.innerHTML = '<div class="empty">读取失败，检查 Token 是否正确</div>'; return; }
+    var data = await r.json();
+    if (!Array.isArray(data)) { el.innerHTML = '<div class="empty">暂无待审批</div>'; return; }
+    var files = data.filter(function(f){ return f.name && f.name.endsWith('.json'); });
+    if (files.length === 0) { el.innerHTML = '<div class="empty">✅ 暂无待审批</div>'; return; }
+
+    var items = [];
+    for (var f of files) {
+      var cr = await gh('unlock_data/pending/' + f.name);
+      if (!cr.ok) continue;
+      var cd = await cr.json();
+      try {
+        var info = JSON.parse(base64decode(cd.content));
+        items.push({ name: f.name, sha: cd.sha, nick: info.nick, time: info.time });
+      } catch(e) {}
+    }
+
+    el.innerHTML = '';
+    items.forEach(function(item){
+      var t = item.time ? item.time.slice(0,16).replace('T',' ') : '';
+      el.innerHTML += '<div class="item"><div><div class="nick">' + item.nick + '</div><div class="time">' + t + '</div></div>' +
+        '<button class="btn" onclick="approve(\'' + item.name.replace(/'/g,"\\'") + '\',\'' + item.sha + '\',\'' + item.nick.replace(/'/g,"\\'") + '\')">✅ 授权</button></div>';
+    });
+    document.querySelector('h1').innerHTML = '🔑 授权管理 <span style="background:#FF3B30;color:#fff;border-radius:20px;padding:2px 10px;font-size:13px;margin-left:6px">' + items.length + '</span>';
+
+    if (mode === 'auto' && items.length > 0) {
+      for (var item of items) await approve(item.name, item.sha, item.nick);
+    }
+  } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
+}
+
+async function approve(fname, fsha, fnick) {
+  try {
+    // Read content
+    var cr = await gh('unlock_data/pending/' + fname);
+    var cd = await cr.json();
+    var content = base64decode(cd.content);
+
+    // Write to approved
+    await ghPut('unlock_data/approved/' + fname, content);
+
+    // Delete pending
+    await ghDelete('unlock_data/pending/' + fname, fsha);
+
+    T('✅ ' + fnick + ' 已授权');
+    loadPending();
+  } catch(e) { T('授权失败'); }
+}
+
+function start() {
+  TOKEN = localStorage.getItem('gh_token');
+  updateUI();
+  if (TOKEN) { loadPending(); setInterval(loadPending, 8000); }
+}
 </script>
 </body>
 </html>
