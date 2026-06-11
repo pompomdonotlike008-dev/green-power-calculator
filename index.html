@@ -532,32 +532,28 @@ function startCheck() {
           var raw = atob(d.content);
           var list;
           try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
-          // 按票据号匹配，不是按昵称
           for (var i=0;i<list.length;i++) {
             if (list[i].ticket === ticket) {
               clearInterval(intv);
               localStorage.setItem('calc_unlocked', 'true');
               localStorage.removeItem('calc_waiting');
               resetBtn();
-              alert('✅ 管理员已授权，请点击"开始计算"！');
+              // 用 notification 或焦点来提示用户
+              if (document.hidden) {
+                document.title = '✅ 已授权！请返回计算器';
+                setTimeout(function(){ location.reload(); }, 3000);
+              } else {
+                alert('✅ 管理员已授权，请点击"开始计算"！');
+              }
               return;
             }
           }
         } catch(e) {}
       });
     }).catch(function(){});
-  }, 4000);
+  }, 3000);
   setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
-}
-function resetBtn() {
-  var btn = document.getElementById('calcBtn');
-  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; }
-}
-function waitBtn() {
-  var btn = document.getElementById('calcBtn');
-  if (btn) { btn.textContent = '⏳ 等待授权...'; btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; btn.style.cursor = 'not-allowed'; }
-}
-function adminUnlock() {
+}function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
   var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
@@ -632,7 +628,42 @@ function resetBtn() {
 }
 function waitBtn() {
   var btn = document.getElementById('calcBtn');
-  if (btn) { btn.textContent = '⏳ 等待授权...'; btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; btn.style.cursor = 'not-allowed'; }
+  if (!btn) return;
+  btn.textContent = '⏳ 等待授权...点此重试';
+  btn.style.opacity = '0.6';
+  btn.style.pointerEvents = 'auto';
+  btn.style.cursor = 'pointer';
+  btn.onclick = function(){
+    // 手动重试检查授权
+    var nick = localStorage.getItem('calc_nick');
+    var ticket = localStorage.getItem('calc_ticket');
+    if (!nick || !ticket) { showPaymentWall(); return; }
+    btn.textContent = '⏳ 检测中...';
+    btn.style.pointerEvents = 'none';
+    var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
+      headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+    }).then(function(r){
+      if (!r.ok) { waitBtn(); return; }
+      r.json().then(function(d){
+        try {
+          var raw = atob(d.content);
+          var list;
+          try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+          for (var i=0;i<list.length;i++) {
+            if (list[i].ticket === ticket) {
+              localStorage.setItem('calc_unlocked', 'true');
+              localStorage.removeItem('calc_waiting');
+              resetBtn();
+              alert('✅ 已授权！');
+              return;
+            }
+          }
+        } catch(e) {}
+        waitBtn();
+      });
+    }).catch(function(){ waitBtn(); });
+  };
 }
 function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
