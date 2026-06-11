@@ -445,13 +445,15 @@ function updateBadge() {
   if (localStorage.getItem('calc_unlocked')) {
     badge.textContent = '✅ 已解锁'; badge.style.display = 'block'; return;
   }
-  var used = localStorage.getItem('calc_usage');
-  if (!used) { badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block'; }
-  else { badge.textContent = '🔒 需授权'; badge.style.display = 'block'; }
+  if (!localStorage.getItem('calc_done')) {
+    badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block';
+  } else {
+    badge.textContent = '🔒 需授权'; badge.style.display = 'block';
+  }
 }
 function canUse() {
   if (localStorage.getItem('calc_unlocked') === 'true' || localStorage.getItem('calc_unlocked') === 'admin') return true;
-  return !localStorage.getItem('calc_usage');
+  return !localStorage.getItem('calc_done');
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
@@ -528,45 +530,17 @@ function startCheck(nick) {
   setTimeout(function(){ clearInterval(intv); }, 600000);
 }
 function doCalc() {
-  // 已解锁 → 算
+  // 已解锁（管理员授权过）→ 直接算
   if (localStorage.getItem('calc_unlocked')) {
     __runCalc(); return;
   }
-  // 有免费次数 → 算一次，然后用掉
-  if (getUsage() < FREE_USES) {
-    localStorage.setItem('calc_usage', '1');
+  // 标记已算过（第一次免费，后续锁定）
+  var hasCalculated = localStorage.getItem('calc_done');
+  if (!hasCalculated) {
+    localStorage.setItem('calc_done', 'true');
     __runCalc(); return;
   }
-  // 等待授权中
-  if (localStorage.getItem('calc_waiting') === 'true') {
-    var nick = localStorage.getItem('calc_nick');
-    if (nick) {
-      var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-      fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
-        headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-      }).then(function(r){
-        if (!r.ok) { alert('⏳ 管理员尚未授权'); return; }
-        r.json().then(function(d){
-          try {
-            var raw4 = atob(d.content);
-            var list;
-            try { list = JSON.parse(decodeURIComponent(escape(raw4))); } catch(e) { list = JSON.parse(raw4); }
-            for (var i=0;i<list.length;i++) {
-              if (list[i].nick === nick) {
-                localStorage.setItem('calc_unlocked', 'true');
-                localStorage.removeItem('calc_waiting');
-                alert('✅ 已授权！再点一次"开始计算"');
-                return;
-              }
-            }
-            alert('⏳ 管理员尚未授权');
-          } catch(e) { alert('⏳ 管理员尚未授权'); }
-        });
-      }).catch(function(){ alert('⏳ 管理员尚未授权'); });
-    }
-    return;
-  }
-  // 弹窗
+  // 已经算过了 → 弹授权窗口
   showPaymentWall();
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
