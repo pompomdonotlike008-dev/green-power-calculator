@@ -473,8 +473,10 @@ function unlockByFollow() {
     localStorage.setItem('calc_unlocked', 'true');
     closePayment(); return;
   }
-  // 清除旧的昵称记录，防止"已使用过"问题
   localStorage.removeItem('calc_used_nicks');
+  // 生成一次性票据（时间戳+随机数）
+  var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
+  localStorage.setItem('calc_ticket', ticket);
   localStorage.setItem('calc_nick', nick);
   localStorage.setItem('calc_waiting', 'true');
   localStorage.removeItem('calc_unlocked');
@@ -488,7 +490,7 @@ function unlockByFollow() {
     return r.json().then(function(d){ try { return decodeURIComponent(escape(atob(d.content))); } catch(e) { try { return atob(d.content); } catch(e2) { return '[]'; } } });
   }).catch(function(){ return '[]'; }).then(function(raw){
     var list = JSON.parse(raw);
-    list.push({nick:nick, time:new Date().toISOString()});
+    list.push({nick:nick, ticket:ticket, time:new Date().toISOString()});
     var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
       headers: {Authorization: 'Bearer ' + tk}
@@ -498,13 +500,15 @@ function unlockByFollow() {
       function putIt() {
         fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
           method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-        }).then(function(){ startCheck(nick); }).catch(function(){});
+        }).then(function(){ startCheck(); }).catch(function(){});
       }
     });
   });
 }
-function startCheck(nick) {
+function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  var ticket = localStorage.getItem('calc_ticket');
+  if (!ticket) return;
   var intv = setInterval(function(){
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
       headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
@@ -515,8 +519,9 @@ function startCheck(nick) {
           var raw = atob(d.content);
           var list;
           try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+          // 按票据号匹配，不是按昵称
           for (var i=0;i<list.length;i++) {
-            if (list[i].nick === nick) {
+            if (list[i].ticket === ticket) {
               clearInterval(intv);
               localStorage.setItem('calc_unlocked', 'true');
               localStorage.removeItem('calc_waiting');
@@ -528,7 +533,7 @@ function startCheck(nick) {
       });
     }).catch(function(){});
   }, 4000);
-  setTimeout(function(){ clearInterval(intv); }, 600000);
+  setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
