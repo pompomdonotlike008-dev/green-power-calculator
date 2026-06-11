@@ -440,29 +440,24 @@ function getUsage() {
   var u = localStorage.getItem('calc_usage');
   return u ? parseInt(u) : 0;
 }
-function addUsage() {
-  localStorage.setItem('calc_usage', getUsage() + 1);
-  updateBadge();
-}
 function updateBadge() {
-  var used = getUsage();
   var badge = document.getElementById('usageBadge');
-  var remaining = FREE_USES - used;
-  if (remaining > 0) {
-    badge.textContent = '🆓 剩余 ' + remaining + ' 次免费';
-    badge.style.display = 'block';
-  } else {
-    var unlocked = localStorage.getItem('calc_unlocked') || '';
-    badge.textContent = unlocked ? '✅ 已解锁' : '🔒 关注解锁';
-    badge.style.display = 'block';
+  if (localStorage.getItem('calc_unlocked')) {
+    badge.textContent = '✅ 已解锁'; badge.style.display = 'block'; return;
   }
+  var used = localStorage.getItem('calc_usage');
+  if (!used) { badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block'; }
+  else { badge.textContent = '🔒 需授权'; badge.style.display = 'block'; }
 }
 function canUse() {
-  var unlocked = localStorage.getItem('calc_unlocked') || '';
-  return getUsage() < FREE_USES || unlocked === 'true' || unlocked === 'admin';
+  if (localStorage.getItem('calc_unlocked') === 'true' || localStorage.getItem('calc_unlocked') === 'admin') return true;
+  return !localStorage.getItem('calc_usage');
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
+  // 隐藏旧结果，避免误解
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('liveSummary').style.display = 'none';
 }
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
@@ -531,19 +526,16 @@ function startCheck(nick) {
   setTimeout(function(){ clearInterval(intv); }, 600000);
 }
 function doCalc() {
-  // 已有解锁 → 直接算
+  // 已解锁 → 算
   if (localStorage.getItem('calc_unlocked')) {
-    __runCalc();
-    return;
+    __runCalc(); return;
   }
-  // 有免费次数且本页尚未用过 → 算一次
-  if (getUsage() < FREE_USES && !localStorage.getItem('calc_free_used')) {
-    addUsage();
-    localStorage.setItem('calc_free_used', 'true');
-    __runCalc();
-    return;
+  // 有免费次数 → 算一次，然后用掉
+  if (getUsage() < FREE_USES) {
+    localStorage.setItem('calc_usage', '1');
+    __runCalc(); return;
   }
-  // 等待授权状态 → 检测是否已被批准
+  // 等待授权中
   if (localStorage.getItem('calc_waiting') === 'true') {
     var nick = localStorage.getItem('calc_nick');
     if (nick) {
@@ -570,7 +562,7 @@ function doCalc() {
     }
     return;
   }
-  // 没免费没解锁 → 弹窗
+  // 弹窗
   showPaymentWall();
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
