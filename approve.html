@@ -42,8 +42,34 @@ function tm() {
   MODE = MODE==='m'?'a':'m';
   localStorage.setItem('m', MODE);
   document.getElementById('modeSw').className = 'switch' + (MODE==='a'?' on':'');
-  document.getElementById('modeDesc').textContent = MODE==='a'?'🟢 自动模式':'🔴 手动模式';
-  if (MODE==='a') ld();
+  document.getElementById('modeDesc').textContent = MODE==='a'?'🟢 自动模式 · 所有人免费用':'🔴 手动模式 · 点授权';
+  if (MODE==='a') {
+    // 写入自动模式标记到GitHub
+    fetch('https://api.github.com/repos/'+REPO+'/contents/unlock_data/auto_mode.json', {
+      headers: {Authorization: 'Bearer '+TK}
+    }).then(function(r){
+      if (!r.ok) return;
+      r.json().then(function(d){
+        var body = {message:'auto on', content:btoa('on'), branch:'main', sha:d.sha};
+        fetch('https://api.github.com/repos/'+REPO+'/contents/unlock_data/auto_mode.json', {
+          method:'PUT', headers:{Authorization:'Bearer '+TK,'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }).then(function(){ ld(); }).catch(function(){});
+      });
+    }).catch(function(){});
+  } else {
+    fetch('https://api.github.com/repos/'+REPO+'/contents/unlock_data/auto_mode.json', {
+      headers: {Authorization: 'Bearer '+TK}
+    }).then(function(r){
+      if (!r.ok) return;
+      r.json().then(function(d){
+        fetch('https://api.github.com/repos/'+REPO+'/contents/unlock_data/auto_mode.json', {
+          method:'DELETE', headers:{Authorization:'Bearer '+TK,'Content-Type':'application/json'},
+          body:JSON.stringify({message:'auto off', sha:d.sha, branch:'main'})
+        }).catch(function(){});
+      });
+    }).catch(function(){});
+    ld();
+  }
 }
 
 function gh(g, m, d) {
@@ -94,7 +120,7 @@ async function ld() {
     items.forEach(function(item,i){
       el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div><div class="time">'+(item.time?item.time.slice(5,16).replace('T',' '):'')+'</div></div><button class="btn" onclick="ap(\''+item.nick.replace(/'/g,"\\'")+'\','+i+')">✅ 授权</button></div>';
     });
-    if (MODE==='a') for(var i=items.length-1;i>=0;i--) ap(i);
+    if (MODE==='a') approveAll();
   } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
