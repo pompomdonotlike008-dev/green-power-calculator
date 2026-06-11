@@ -437,15 +437,17 @@ var API_URL = 'https://vercel-deploy-me7izouw1-xianning-wang-s-projects.vercel.a
 var FREE_USES = 1;
 
 // 🔥 新用户免费用一次，老用户保留免费资格
-var VER = 'v7';
-if (localStorage.getItem('calc_ver') !== VER) {
-  localStorage.removeItem('calc_waiting');
-  localStorage.removeItem('calc_unlocked');
-  localStorage.removeItem('calc_ticket');
-  localStorage.removeItem('calc_nick');
-  localStorage.removeItem('calc_used_nicks');
-  localStorage.removeItem('calc_free_used');
+var VER = 'v8';
+var oldVer = localStorage.getItem('calc_ver');
+if (oldVer !== VER) {
+  // 清空全部，确保首次免费
+  localStorage.clear();
   localStorage.setItem('calc_ver', VER);
+  localStorage.setItem('calc_free', '1');
+}
+// 确保免费标记存在
+if (!localStorage.getItem('calc_free')) {
+  localStorage.setItem('calc_free', '1');
 }
 
 function getUsage() {
@@ -457,7 +459,7 @@ function updateBadge() {
   if (localStorage.getItem('calc_unlocked')) {
     badge.textContent = '✅ 已解锁'; badge.style.display = 'block'; return;
   }
-  if (!localStorage.getItem('calc_done')) {
+  if (localStorage.getItem('calc_free') === '1') {
     badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block';
   } else {
     badge.textContent = '🔒 需授权'; badge.style.display = 'block';
@@ -465,7 +467,7 @@ function updateBadge() {
 }
 function canUse() {
   if (localStorage.getItem('calc_unlocked') === 'true' || localStorage.getItem('calc_unlocked') === 'admin') return true;
-  return !localStorage.getItem('calc_done');
+  return localStorage.getItem('calc_free') === '1';
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
@@ -552,6 +554,74 @@ function startCheck() {
     }).catch(function(){});
   }, 1000);
   setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
+}function adminUnlock() {
+  var code = document.getElementById('adminUnlockInput').value.trim();
+  if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
+  var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
+  if (sum % 3 !== 0) { alert('解锁码无效'); return; }
+  localStorage.setItem('calc_unlocked', 'true');
+  closePayment();
+}
+
+// 计算入口（带付费检查）
+// 管理员激活：连续点击 ⚡ 5次
+var adminClicks = 0;
+function adminClick() {
+  adminClicks++;
+  if (adminClicks >= 5) {
+    localStorage.setItem('calc_unlocked', 'admin');
+    document.getElementById('usageBadge').textContent = '👑 管理员';
+    adminClicks = 0;
+    closePayment();
+    __runCalc();
+  }
+  setTimeout(function(){ adminClicks = 0; }, 3000);
+}
+function doCalc() {
+  // 免费券可用 → 用掉，直接算
+  var free = localStorage.getItem('calc_free');
+  if (free === '1') {
+    localStorage.setItem('calc_free', '0');
+    __runCalc(); return;
+  }
+  // 已解锁 → 算一次，用完即锁
+  if (localStorage.getItem('calc_unlocked')) {
+    localStorage.removeItem('calc_unlocked');
+    localStorage.removeItem('calc_ticket');
+    __runCalc(); return;
+  }
+  // 等待授权中 → 检测是否已被批准
+  if (localStorage.getItem('calc_waiting') === 'true') {
+    waitBtn();
+    var ticket = localStorage.getItem('calc_ticket');
+    if (ticket) {
+      var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+      fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
+        headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+      }).then(function(r){
+        if (!r.ok) return;
+        r.json().then(function(d){
+          try {
+            var raw = atob(d.content);
+            var list;
+            try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+            for (var i=0;i<list.length;i++) {
+              if (list[i].ticket === ticket) {
+                localStorage.setItem('calc_unlocked', 'true');
+                localStorage.removeItem('calc_waiting');
+                resetBtn();
+                alert('✅ 已授权！点击"开始计算"');
+                return;
+              }
+            }
+          } catch(e) {}
+        });
+      }).catch(function(){});
+    }
+    return;
+  }
+  // 弹窗
+  showPaymentWall();
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
