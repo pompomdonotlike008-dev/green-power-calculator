@@ -436,10 +436,9 @@ function __runCalc() {
 var API_URL = 'https://vercel-deploy-me7izouw1-xianning-wang-s-projects.vercel.app/api';
 var FREE_USES = 1;
 
-// 版本检查：新用户或版本升级时清除脏数据，但不影响免费体验
+// 🔥 新用户免费用一次，老用户保留免费资格
 var VER = 'v7';
 if (localStorage.getItem('calc_ver') !== VER) {
-  // 只清除可能卡住用户的脏数据，保留 calc_done 让老用户继续免费
   localStorage.removeItem('calc_waiting');
   localStorage.removeItem('calc_unlocked');
   localStorage.removeItem('calc_ticket');
