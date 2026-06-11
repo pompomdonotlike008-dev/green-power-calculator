@@ -436,12 +436,12 @@ function __runCalc() {
 var API_URL = 'https://vercel-deploy-me7izouw1-xianning-wang-s-projects.vercel.app/api';
 var FREE_USES = 1;
 
-// 版本检查：每次部署新版本，重置 calc_done 让用户重新获得一次免费机会
-var VER = 'v6';
+// 版本检查：新用户或版本升级时清除脏数据，但不影响免费体验
+var VER = 'v7';
 if (localStorage.getItem('calc_ver') !== VER) {
-  localStorage.removeItem('calc_done');
-  localStorage.removeItem('calc_unlocked');
+  // 只清除可能卡住用户的脏数据，保留 calc_done 让老用户继续免费
   localStorage.removeItem('calc_waiting');
+  localStorage.removeItem('calc_unlocked');
   localStorage.removeItem('calc_ticket');
   localStorage.removeItem('calc_nick');
   localStorage.removeItem('calc_used_nicks');
@@ -551,7 +551,7 @@ function startCheck() {
         } catch(e) {}
       });
     }).catch(function(){});
-  }, 3000);
+  }, 1000);
   setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
