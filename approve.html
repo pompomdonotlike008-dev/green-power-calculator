@@ -28,8 +28,8 @@ h1{font-size:22px;color:#1a1a1a;margin:0 0 4px}
   </div>
   <p style="font-size:13px;color:#86868b;margin:0 0 8px" id="modeDesc">手动模式 · 点授权</p>
   <div style="display:flex;gap:6px;margin-bottom:10px">
-    <button class="btn" onclick="approveAll()" style="flex:1;background:#007AFF">✅ 批量授权</button>
-    <button class="btn" onclick="ld()" style="flex:0;background:#007AFF">🔄</button>
+    <button class="btn" onclick="approveAll()" style="flex:1;background:#007AFF;transition:all 0.1s;active:transform:scale(0.95)" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">✅ 批量授权</button>
+    <button class="btn" onclick="ld()" style="flex:0;background:#007AFF;transition:all 0.1s" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">🔄</button>
   </div>
   <div id="list"><div class="empty">加载中...</div></div>
 </div>
