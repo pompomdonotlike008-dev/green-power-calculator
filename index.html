@@ -473,10 +473,11 @@ function updateBadge() {
   if (localStorage.getItem('auto_mode') === 'on') {
     badge.textContent = '🟢 自动模式'; badge.style.display = 'block'; return;
   }
-  if (localStorage.getItem('calc_free') === '1') {
+  var free = localStorage.getItem('calc_free');
+  if (free === '1') {
     badge.textContent = '🆓 剩余 1 次免费'; badge.style.display = 'block';
   } else {
-    badge.textContent = '🔒 需授权'; badge.style.display = 'block';
+    badge.textContent = '🆓 剩余 0 次免费'; badge.style.display = 'block';
   }
 }
 function canUse() {
