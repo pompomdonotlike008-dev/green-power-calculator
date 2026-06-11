@@ -123,59 +123,77 @@ function base64decode(str) {
 async function loadPending() {
   var el = document.getElementById('list');
   try {
-    var r = await gh('unlock_data/pending/');
-    if (!r.ok) {
-      var errMsg = '读取失败';
-      try { var errData = await r.json(); errMsg += ' (' + r.status + (errData.message ? ': ' + errData.message : '') + ')'; } catch(e) {}
-      el.innerHTML = '<div class="empty">' + errMsg + '<br><span style="font-size:12px">确认 Token 正确且未过期</span></div>';
-      return;
-    }
-    var data = await r.json();
-    if (!Array.isArray(data)) { el.innerHTML = '<div class="empty">暂无待审批</div>'; return; }
-    var files = data.filter(function(f){ return f.name && f.name.endsWith('.json') && f.name !== '.gitkeep'; });
-    if (files.length === 0) { el.innerHTML = '<div class="empty">✅ 暂无待审批</div>'; return; }
-
-    var items = [];
-    for (var f of files) {
-      var cr = await gh('unlock_data/pending/' + f.name);
-      if (!cr.ok) continue;
-      var cd = await cr.json();
-      try {
-        var info = JSON.parse(base64decode(cd.content));
-        items.push({ name: f.name, sha: cd.sha, nick: info.nick, time: info.time });
-      } catch(e) {}
-    }
+    // 直接读取 pending 请求文件
+    var r = await gh('unlock_data/pending_list.json');
+    if (!r.ok) { el.innerHTML = '<div class="empty">暂无待审批</div>'; return; }
+    var d = await r.json();
+    var raw = '';
+    try { raw = base64decode(d.content); } catch(e) { el.innerHTML = '<div class="empty">暂无待审批</div>'; return; }
+    var items = JSON.parse(raw);
+    if (!items || !items.length || items.length === 0) { el.innerHTML = '<div class="empty">✅ 暂无待审批</div>'; return; }
 
     el.innerHTML = '';
     items.forEach(function(item){
       var t = item.time ? item.time.slice(0,16).replace('T',' ') : '';
       el.innerHTML += '<div class="item"><div><div class="nick">' + item.nick + '</div><div class="time">' + t + '</div></div>' +
-        '<button class="btn" onclick="approve(\'' + item.name.replace(/'/g,"\\'") + '\',\'' + item.sha + '\',\'' + item.nick.replace(/'/g,"\\'") + '\')">✅ 授权</button></div>';
+        '<button class="btn" onclick="approve(\'' + item.nick.replace(/'/g,"\\'") + '\')">✅ 授权</button></div>';
     });
     document.querySelector('h1').innerHTML = '🔑 授权管理 <span style="background:#FF3B30;color:#fff;border-radius:20px;padding:2px 10px;font-size:13px;margin-left:6px">' + items.length + '</span>';
 
     if (mode === 'auto' && items.length > 0) {
-      for (var item of items) await approve(item.name, item.sha, item.nick);
+      for (var item of items) await approve(item.nick);
     }
-  } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
+  } catch(e) { el.innerHTML = '<div class="empty">加载失败(' + e.message + ')</div>'; }
 }
 
-async function approve(fname, fsha, fnick) {
+async function approve(nick) {
   try {
-    // Read content
-    var cr = await gh('unlock_data/pending/' + fname);
-    var cd = await cr.json();
-    var content = base64decode(cd.content);
+    // 1. 读取当前 pending 列表
+    var r = await gh('unlock_data/pending_list.json');
+    if (!r.ok) { T('读取失败'); return; }
+    var d = await r.json();
+    var raw = base64decode(d.content);
+    var items = JSON.parse(raw);
 
-    // Write to approved
-    await ghPut('unlock_data/approved/' + fname, content);
+    // 2. 找到该昵称
+    var idx = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].nick === nick) { idx = i; break; }
+    }
+    if (idx < 0) { T('未找到'); loadPending(); return; }
 
-    // Delete pending
-    await ghDelete('unlock_data/pending/' + fname, fsha);
+    // 3. 从 pending 移除
+    var approved = items.splice(idx, 1)[0];
+    approved.status = 'approved';
 
-    T('✅ ' + fnick + ' 已授权');
+    // 4. 写回 pending_list
+    var newContent = JSON.stringify(items);
+    // 如果是空数组，删除文件而不是写空数组
+    if (items.length === 0) {
+      await fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'approved all', sha: d.sha, branch: 'main' })
+      }).catch(function(){});
+    } else {
+      await ghPut('unlock_data/pending_list.json', newContent, d.sha);
+    }
+
+    // 5. 写入 approved_list（追加）
+    var ar = await gh('unlock_data/approved_list.json');
+    var aList = [];
+    if (ar.ok) {
+      var ad = await ar.json();
+      try { aList = JSON.parse(base64decode(ad.content)); } catch(e) {}
+      aList.push(approved);
+      await ghPut('unlock_data/approved_list.json', JSON.stringify(aList), ad.sha);
+    } else {
+      await ghPut('unlock_data/approved_list.json', JSON.stringify([approved]));
+    }
+
+    T('✅ ' + nick + ' 已授权');
     loadPending();
-  } catch(e) { T('授权失败'); }
+  } catch(e) { T('授权失败: ' + e.message); }
 }
 
 function start() {
