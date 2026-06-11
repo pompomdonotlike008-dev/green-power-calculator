@@ -26,7 +26,11 @@ h1{font-size:22px;color:#1a1a1a;margin:0 0 4px}
     <h1 style="margin:0">🔑 授权管理</h1>
     <div class="switch" id="modeSw" onclick="tm()"></div>
   </div>
-  <p style="font-size:13px;color:#86868b;margin:0 0 12px" id="modeDesc">手动模式 · 点授权</p>
+  <p style="font-size:13px;color:#86868b;margin:0 0 8px" id="modeDesc">手动模式 · 点授权</p>
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button class="btn" onclick="approveAll()" style="flex:1;background:#007AFF">✅ 批量授权</button>
+    <button class="btn" onclick="ld()" style="flex:0;background:#007AFF">🔄</button>
+  </div>
   <div id="list"><div class="empty">加载中...</div></div>
 </div>
 <script>
@@ -47,6 +51,34 @@ function gh(g, m, d) {
   if (d) { o.method = 'PUT'; o.body = JSON.stringify(d); o.headers['Content-Type'] = 'application/json'; }
   else if (m) o.method = m;
   return fetch('https://api.github.com/repos/'+REPO+'/contents/'+g, o);
+}
+
+async function approveAll() {
+  try {
+    var r = await gh('unlock_data/pending_list.json');
+    if (!r.ok) return;
+    var d = await r.json();
+    var raw = atob(d.content);
+    var list;
+    try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+    if (!list.length) return;
+
+    // Move all to approved
+    var ar = await gh('unlock_data/approved_list.json');
+    var approvedList = [];
+    if (ar.ok) {
+      var ad = await ar.json();
+      var raw2 = atob(ad.content);
+      try { approvedList = JSON.parse(decodeURIComponent(escape(raw2))); } catch(e) { approvedList = JSON.parse(raw2); }
+    }
+    for (var item of list) approvedList.push(item);
+
+    // Write approved
+    await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main'});
+    // Delete pending
+    await gh('unlock_data/pending_list.json', 'DELETE', {message:'u', sha:d.sha, branch:'main'});
+    ld();
+  } catch(e) {}
 }
 
 async function ld() {
