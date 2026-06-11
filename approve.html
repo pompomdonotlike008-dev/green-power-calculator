@@ -175,9 +175,16 @@ async function approve(fname, fsha, fnick) {
 
 function start() {
   TOKEN = localStorage.getItem('gh_token');
+  PWD = localStorage.getItem('gh_pwd');
   updateUI();
-  if (TOKEN) { loadPending(); setInterval(loadPending, 8000); }
+  if (TOKEN) {
+    document.getElementById('setupCard').style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+    loadPending();
+    setInterval(loadPending, 8000);
+  }
 }
+window.onload = start;
 </script>
 </body>
 </html>
