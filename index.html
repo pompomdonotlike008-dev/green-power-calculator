@@ -436,6 +436,19 @@ function __runCalc() {
 var API_URL = 'https://vercel-deploy-me7izouw1-xianning-wang-s-projects.vercel.app/api';
 var FREE_USES = 1;
 
+// 版本检查：每次部署新版本，重置 calc_done 让用户重新获得一次免费机会
+var VER = 'v6';
+if (localStorage.getItem('calc_ver') !== VER) {
+  localStorage.removeItem('calc_done');
+  localStorage.removeItem('calc_unlocked');
+  localStorage.removeItem('calc_waiting');
+  localStorage.removeItem('calc_ticket');
+  localStorage.removeItem('calc_nick');
+  localStorage.removeItem('calc_used_nicks');
+  localStorage.removeItem('calc_free_used');
+  localStorage.setItem('calc_ver', VER);
+}
+
 function getUsage() {
   var u = localStorage.getItem('calc_usage');
   return u ? parseInt(u) : 0;
