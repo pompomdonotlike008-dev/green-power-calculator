@@ -473,6 +473,8 @@ function unlockByFollow() {
     localStorage.setItem('calc_unlocked', 'true');
     closePayment(); return;
   }
+  // 清除旧的昵称记录，防止"已使用过"问题
+  localStorage.removeItem('calc_used_nicks');
   localStorage.setItem('calc_nick', nick);
   localStorage.setItem('calc_waiting', 'true');
   localStorage.removeItem('calc_unlocked');
