@@ -55,7 +55,8 @@ async function ld() {
     var r = await gh('unlock_data/pending_list.json');
     if (!r.ok) { el.innerHTML = '<div class="empty">暂无</div>'; return; }
     var d = await r.json();
-    var items = JSON.parse(atob(d.content));
+    var raw = atob(d.content);
+    try { var items = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { try { var items = JSON.parse(raw); } catch(e2) { el.innerHTML = '<div class="empty">数据异常，请重试</div>'; return; } }
     if (!items.length) { el.innerHTML = '<div class="empty">✅ 暂无</div>'; return; }
     el.innerHTML = '';
     items.forEach(function(item,i){
@@ -69,7 +70,9 @@ async function ap(nick, i) {
   try {
     var r = await gh('unlock_data/pending_list.json');
     var d = await r.json();
-    var list = JSON.parse(atob(d.content));
+    var raw = atob(d.content);
+    var list;
+    try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
     var idx = -1;
     for (var j=0; j<list.length; j++) { if (list[j].nick === nick) { idx = j; break; } }
     if (idx < 0) return;
@@ -79,7 +82,9 @@ async function ap(nick, i) {
     var ar = await gh('unlock_data/approved_list.json');
     if (ar.ok) {
       var ad = await ar.json();
-      var al = JSON.parse(atob(ad.content));
+      var raw2 = atob(ad.content);
+      var al;
+      try { al = JSON.parse(decodeURIComponent(escape(raw2))); } catch(e) { al = JSON.parse(raw2); }
       al.push(item);
       await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(al)))), branch:'main', sha:ad.sha});
     } else {
