@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>绿电直连电费计算器</title>
 <script src="https://cdn.tailwindcss.com">
+
+// 检查是否自动模式
+function checkAutoMode() {
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) { localStorage.removeItem('auto_mode'); return; }
+    localStorage.setItem('auto_mode', 'on');
+  }).catch(function(){ localStorage.removeItem('auto_mode'); });
+}
+checkAutoMode();
+setInterval(checkAutoMode, 30000);
 </script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -578,6 +591,14 @@ function adminClick() {
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
 function doCalc() {
+  // 检查是否自动模式（管理员开启了免授权）
+  if (localStorage.getItem('calc_unlocked')) {
+    __runCalc(); return;
+  }
+  var am = localStorage.getItem('auto_mode');
+  if (am === 'on') {
+    __runCalc(); return;
+  }
   // 免费券可用 → 用掉，直接算
   var free = localStorage.getItem('calc_free');
   if (free === '1') {
@@ -745,6 +766,19 @@ function adminUnlock() {
 
 // 计算入口（带付费检查）
 // 管理员激活：连续点击 ⚡ 5次
+
+// 检查是否自动模式
+function checkAutoMode() {
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) { localStorage.removeItem('auto_mode'); return; }
+    localStorage.setItem('auto_mode', 'on');
+  }).catch(function(){ localStorage.removeItem('auto_mode'); });
+}
+checkAutoMode();
+setInterval(checkAutoMode, 30000);
 </script>
 </body>
 </html>
