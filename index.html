@@ -421,6 +421,8 @@ function __runCalc() {
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">输配电费</td><td class="p-2 text-center">已含</td><td class="p-2 text-center">已含</td><td class="p-2 text-center font-mono">' + fmt(trans_gc) + '</td></tr>' +
     '<tr><td class="p-2 font-bold">月度总电费</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px">¥ ' + fmt(total_trad) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
+
+}
 function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') {
