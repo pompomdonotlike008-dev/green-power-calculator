@@ -628,8 +628,9 @@ function startCheck() {
 
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('liveSummary').style.display = 'none';
   updateBadge();
-  if (canUse()) __runCalc();
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
