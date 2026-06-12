@@ -333,6 +333,10 @@ checkAutoMode();
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
+// 初始化：新用户获得1次免费机会
+if (!localStorage.getItem('calc_free')) {
+  localStorage.setItem('calc_free', '1');
+}
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 function __runCalc() {
@@ -424,6 +428,11 @@ function __runCalc() {
 
 }
 function doCalc() {
+  // 永久白名单用户 → 直接算
+  var pn = localStorage.getItem('calc_nick');
+  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') {
+    __runCalc(); return;
+  }
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') {
     __runCalc(); return;
@@ -544,7 +553,30 @@ function unlockByFollow() {
   localStorage.setItem('calc_waiting', 'true');
   localStorage.removeItem('calc_unlocked');
   closePayment();
+  // 检查是否永久白名单用户
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) return;
+    r.json().then(function(d){
+      try {
+        var raw = atob(d.content);
+        var pList;
+        try { pList = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { pList = JSON.parse(raw); }
+        for (var i=0;i<pList.length;i++) {
+          if (pList[i].nick === nick) {
+            localStorage.setItem('calc_unlocked', 'true');
+            localStorage.setItem('calc_perm_' + nick, '1');
+            localStorage.removeItem('calc_waiting');
+            resetBtn();
+            alert('🎉 您是永久白名单用户，已自动解锁！');
+            return;
+          }
+        }
+      } catch(e) {}
+    });
+  }).catch(function(){});'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
   }).then(function(r){
