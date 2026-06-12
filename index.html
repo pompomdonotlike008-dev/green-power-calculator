@@ -333,6 +333,7 @@
 <script>
 // 检查是否自动模式
 function checkAutoMode() {
+  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
@@ -346,7 +347,7 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 // v10 - 强制清除旧数据，每人给1次免费
-var V = 'v10';
+var V = 'v11';
 if (localStorage.getItem('_v') !== V) {
   localStorage.clear();
   localStorage.setItem('_v', V);
@@ -456,7 +457,8 @@ function doCalc() {
     waitBtn();
     var ticket = localStorage.getItem('calc_ticket');
     if (ticket) {
-      var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+      var REPO = 'pompomdonotlike008-dev/green-power-calculator';
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
       fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
         headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
       }).then(function(r){
@@ -512,7 +514,8 @@ function waitBtn() {
     if (!nick || !ticket) { showPaymentWall(); return; }
     btn.textContent = '⏳ 检测中...';
     btn.style.pointerEvents = 'none';
-    var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+    var REPO = 'pompomdonotlike008-dev/green-power-calculator';
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
       headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
     }).then(function(r){
@@ -544,64 +547,49 @@ var adminClicks = 0;
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) return;
-  if (nick === 'key' || nick === 'KEY') {
-    localStorage.setItem('calc_unlocked', 'true');
-    closePayment(); return;
-  }
-  localStorage.removeItem('calc_used_nicks');
-  var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
-  localStorage.setItem('calc_ticket', ticket);
+  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked', 'true'); closePayment(); return; }
+  // 永久白名单检查
+  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', 'https://api.github.com/repos/' + REPO + '/contents/unlock_data/permanent.json', false);
+    x.setRequestHeader('Authorization', 'Bearer ' + tk);
+    x.send();
+    if (x.status === 200) {
+      var d = JSON.parse(x.responseText);
+      var pl = JSON.parse(atob(d.content));
+      for (var i=0; i<pl.length; i++) {
+        if (pl[i].nick === nick) {
+          localStorage.setItem('perm_' + nick, '1');
+          localStorage.setItem('calc_unlocked', 'true');
+          closePayment();
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  // 普通用户：记下昵称，进界面，后台通知管理员
   localStorage.setItem('calc_nick', nick);
   localStorage.setItem('calc_waiting', 'true');
-  localStorage.removeItem('calc_unlocked');
   closePayment();
-  // 检查是否永久白名单用户
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
-    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-  }).then(function(r){
-    if (!r.ok) return;
-    r.json().then(function(d){
-      try {
-        var raw = atob(d.content);
-        var pList;
-        try { pList = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { pList = JSON.parse(raw); }
-        for (var i=0;i<pList.length;i++) {
-          if (pList[i].nick === nick) {
-            localStorage.setItem('calc_unlocked', 'true');
-            localStorage.setItem('calc_perm_' + nick, '1');
-            localStorage.removeItem('calc_waiting');
-            resetBtn();
-            alert('🎉 您是永久白名单用户，已自动解锁！');
-            return;
-          }
-        }
-      } catch(e) {}
-    });
-  }).catch(function(){});'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
-    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-  }).then(function(r){
-    if (!r.ok) return '[]';
-    return r.json().then(function(d){ try { return decodeURIComponent(escape(atob(d.content))); } catch(e) { try { return atob(d.content); } catch(e2) { return '[]'; } } });
-  }).catch(function(){ return '[]'; }).then(function(raw){
-    var list = JSON.parse(raw);
-    list.push({nick:nick, ticket:ticket, time:new Date().toISOString()});
-    var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
-    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
-      headers: {Authorization: 'Bearer ' + tk}
-    }).then(function(r2){
-      if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
-      else putIt();
-      function putIt() {
-        fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
-          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-        }).then(function(){ startCheck(); }).catch(function(){});
-      }
-    });
+  // 后台通知
+  var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:nick,time:new Date().toISOString()}])))), branch:'main'};
+  var p = 'unlock_data/pending_list.json';
+  fetch('https://api.github.com/repos/' + REPO + '/contents/' + p, {
+    headers: {Authorization: 'Bearer ' + tk}
+  }).then(function(r2){
+    if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
+    else putIt();
+    function putIt() {
+      fetch('https://api.github.com/repos/' + REPO + '/contents/' + p, {
+        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+      }).catch(function(){});
+    }
   });
 }
 function startCheck() {
+  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   var ticket = localStorage.getItem('calc_ticket');
   if (!ticket) return;
