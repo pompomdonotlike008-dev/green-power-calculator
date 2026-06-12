@@ -13,11 +13,14 @@ h1{font-size:22px;color:#1a1a1a;margin:0 0 4px}
 .nick{font-size:16px;font-weight:600;color:#1a1a1a}
 .time{font-size:12px;color:#999}
 .btn{background:#34C759;color:#fff;border:none;border-radius:10px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-red{background:#FF3B30;color:#fff;border:none;border-radius:10px;padding:4px 10px;font-size:12px;cursor:pointer}
 .empty{text-align:center;padding:40px 0;color:#c7c7cc;font-size:15px}
 .switch{width:52px;height:28px;background:#e5e5ea;border-radius:14px;position:relative;cursor:pointer;display:inline-block}
 .switch.on{background:#34C759}
 .switch::after{content:'';width:24px;height:24px;background:#fff;border-radius:12px;position:absolute;top:2px;left:2px;transition:0.2s}
 .switch.on::after{left:26px}
+input{width:100%;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;margin:4px 0}
+input:focus{border-color:#007AFF}
 </style>
 </head>
 <body>
@@ -28,11 +31,22 @@ h1{font-size:22px;color:#1a1a1a;margin:0 0 4px}
   </div>
   <p style="font-size:13px;color:#86868b;margin:0 0 8px" id="modeDesc">手动模式 · 点授权</p>
   <div style="display:flex;gap:6px;margin-bottom:10px">
-    <button class="btn" onclick="approveAll()" style="flex:1;background:#007AFF;transition:all 0.1s;active:transform:scale(0.95)" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">✅ 批量授权</button>
-    <button class="btn" onclick="ld()" style="flex:0;background:#007AFF;transition:all 0.1s" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">🔄</button>
+    <button class="btn" onclick="approveAll()" style="flex:1;background:#007AFF">✅ 批量授权</button>
+    <button class="btn" onclick="ld()" style="flex:0;background:#007AFF">🔄</button>
   </div>
   <div id="list"><div class="empty">加载中...</div></div>
 </div>
+
+<div class="card">
+  <h1 style="font-size:16px">💎 永久白名单</h1>
+  <p style="font-size:12px;color:#86868b;margin:0 0 8px">付费200元的用户加入后永久免费</p>
+  <div style="display:flex;gap:6px">
+    <input type="text" id="permInput" placeholder="输入微信昵称">
+    <button class="btn" onclick="addPerm()" style="background:#FF9500;white-space:nowrap">➕ 加入</button>
+  </div>
+  <div id="permList"><div class="empty">加载中...</div></div>
+</div>
+
 <script>
 var MODE = localStorage.getItem('m') || 'm';
 var TK = 'ghp_gdjuQmGZllAr' + '5N2dmg8jawZhjFYtqy2cMuN1';
@@ -44,7 +58,6 @@ function tm() {
   document.getElementById('modeSw').className = 'switch' + (MODE==='a'?' on':'');
   document.getElementById('modeDesc').textContent = MODE==='a'?'🟢 自动模式 · 所有人免费用':'🔴 手动模式 · 点授权';
   if (MODE==='a') {
-    // 写入自动模式标记到GitHub
     fetch('https://api.github.com/repos/'+REPO+'/contents/unlock_data/auto_mode.json', {
       headers: {Authorization: 'Bearer '+TK}
     }).then(function(r){
@@ -88,8 +101,6 @@ async function approveAll() {
     var list;
     try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
     if (!list.length) return;
-
-    // Move all to approved
     var ar = await gh('unlock_data/approved_list.json');
     var approvedList = [];
     if (ar.ok) {
@@ -98,10 +109,7 @@ async function approveAll() {
       try { approvedList = JSON.parse(decodeURIComponent(escape(raw2))); } catch(e) { approvedList = JSON.parse(raw2); }
     }
     for (var item of list) approvedList.push(item);
-
-    // Write approved
     await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main'});
-    // Delete pending
     await gh('unlock_data/pending_list.json', 'DELETE', {message:'u', sha:d.sha, branch:'main'});
     ld();
   } catch(e) {}
@@ -114,17 +122,17 @@ async function ld() {
     if (!r.ok) { el.innerHTML = '<div class="empty">暂无</div>'; return; }
     var d = await r.json();
     var raw = atob(d.content);
-    try { var items = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { try { var items = JSON.parse(raw); } catch(e2) { el.innerHTML = '<div class="empty">数据异常，请重试</div>'; return; } }
+    try { var items = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { try { var items = JSON.parse(raw); } catch(e2) { el.innerHTML = '<div class="empty">数据异常</div>'; return; } }
     if (!items.length) { el.innerHTML = '<div class="empty">✅ 暂无</div>'; return; }
     el.innerHTML = '';
-    items.forEach(function(item,i){
-      el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div><div class="time">'+(item.time?item.time.slice(5,16).replace('T',' '):'')+'</div></div><button class="btn" onclick="ap(\''+item.nick.replace(/'/g,"\\'")+'\','+i+')">✅ 授权</button></div>';
+    items.forEach(function(item){
+      el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div><div class="time">'+(item.time?item.time.slice(5,16).replace('T',' '):'')+'</div></div><button class="btn" onclick="ap(\''+item.nick.replace(/'/g,"\\'")+'\')">✅ 授权</button></div>';
     });
     if (MODE==='a') approveAll();
   } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
-async function ap(nick, i) {
+async function ap(nick) {
   try {
     var r = await gh('unlock_data/pending_list.json');
     var d = await r.json();
@@ -152,10 +160,66 @@ async function ap(nick, i) {
   } catch(e) { ld(); }
 }
 
+// === 永久白名单管理 ===
+async function addPerm() {
+  var nick = document.getElementById('permInput').value.trim();
+  if (!nick) return;
+  // 读取当前白名单
+  var list = await getPermList();
+  list.push({nick:nick, added:new Date().toISOString()});
+  // 写回
+  var body = {message:'add perm', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
+  var r = await gh('unlock_data/permanent.json');
+  if (r.ok) {
+    var d = await r.json();
+    body.sha = d.sha;
+    await gh('unlock_data/permanent.json', null, body);
+  } else {
+    await gh('unlock_data/permanent.json', null, body);
+  }
+  document.getElementById('permInput').value = '';
+  loadPerms();
+}
+
+async function removePerm(nick) {
+  var list = await getPermList();
+  var idx = -1;
+  for (var i=0;i<list.length;i++) { if (list[i].nick === nick) { idx = i; break; } }
+  if (idx < 0) return;
+  list.splice(idx, 1);
+  var r = await gh('unlock_data/permanent.json');
+  if (r.ok) {
+    var d = await r.json();
+    await gh('unlock_data/permanent.json', null, {message:'remove', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main', sha:d.sha});
+  }
+  loadPerms();
+}
+
+async function getPermList() {
+  var r = await gh('unlock_data/permanent.json');
+  if (!r.ok) return [];
+  var d = await r.json();
+  var raw = atob(d.content);
+  try { return JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { try { return JSON.parse(raw); } catch(e2) { return []; } }
+}
+
+async function loadPerms() {
+  var el = document.getElementById('permList');
+  try {
+    var list = await getPermList();
+    if (!list.length) { el.innerHTML = '<div class="empty">暂无永久用户</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(function(item){
+      el.innerHTML += '<div class="item"><div><div class="nick">'+item.nick+'</div></div><button class="btn-red" onclick="removePerm(\''+item.nick.replace(/'/g,"\\'")+'\')">移除</button></div>';
+    });
+  } catch(e) { el.innerHTML = '<div class="empty">加载失败</div>'; }
+}
+
 document.getElementById('modeSw').className = 'switch' + (MODE==='a'?' on':'');
 document.getElementById('modeDesc').textContent = MODE==='a'?'🟢 自动模式':'🔴 手动模式';
 ld();
 setInterval(ld, 4000);
+loadPerms();
 </script>
 </body>
 </html>
