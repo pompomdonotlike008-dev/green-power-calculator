@@ -436,56 +436,15 @@ function __runCalc() {
 
 }
 function doCalc() {
-  // 永久白名单用户 → 直接算
-  var pn = localStorage.getItem('calc_nick');
-  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { __runCalc(); return; }
-  // 自动模式 → 直接算
-  if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
-  // 免费券 → 用掉，直接算
-  if (localStorage.getItem('calc_free') === '1') {
-    localStorage.setItem('calc_free', '0');
-    __runCalc(); return;
-  }
-  // 已解锁 → 算一次，用完即锁
-  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
-    localStorage.removeItem('calc_unlocked');
-    localStorage.removeItem('calc_ticket');
-    __runCalc(); return;
-  }
-  // 等待授权中
-  if (localStorage.getItem('calc_waiting') === 'true') {
-    waitBtn();
-    var ticket = localStorage.getItem('calc_ticket');
-    if (ticket) {
-      var REPO = 'pompomdonotlike008-dev/green-power-calculator';
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-      fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
-        headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-      }).then(function(r){
-        if (!r.ok) return;
-        r.json().then(function(d){
-          try {
-            var raw = atob(d.content);
-            var list;
-            try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
-            for (var i=0;i<list.length;i++) {
-              if (list[i].ticket === ticket) {
-                localStorage.setItem('calc_unlocked', 'true');
-                localStorage.removeItem('calc_waiting');
-                resetBtn();
-                alert('✅ 已授权！点击"开始计算"');
-                return;
-              }
-            }
-          } catch(e) {}
-        });
-      }).catch(function(){});
-    }
-    return;
-  }
-  // 弹窗
+  var nick=localStorage.getItem('calc_nick');
+  if(nick&&localStorage.getItem('perm_'+nick)==='1'){__runCalc();return;}
+  if(localStorage.getItem('auto_mode')==='on'){__runCalc();return;}
+  if(localStorage.getItem('calc_unlocked')){localStorage.removeItem('calc_unlocked');__runCalc();return;}
+  if(!localStorage.getItem('calc_used')){localStorage.setItem('calc_used','1');__runCalc();return;}
+  if(localStorage.getItem('calc_waiting')==='true'){waitBtn();__runCalc();return;} /*wait btn already showed, user can retry*/
   showPaymentWall();
-}function adminUnlock() {
+}
+function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
   var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
@@ -547,49 +506,29 @@ var adminClicks = 0;
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) return;
-  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked', 'true'); closePayment();
-  __runCalc(); return; }
-  // 永久白名单检查
-  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked','true'); document.getElementById('paymentOverlay').style.display='none'; return; }
+  var tk = 'ghp_'+'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  var rp = 'pompomdonotlike008-dev/green-power-calculator';
   try {
     var x = new XMLHttpRequest();
-    x.open('GET', 'https://api.github.com/repos/' + REPO + '/contents/unlock_data/permanent.json', false);
-    x.setRequestHeader('Authorization', 'Bearer ' + tk);
-    x.send();
-    if (x.status === 200) {
-      var d = JSON.parse(x.responseText);
-      var pl = JSON.parse(atob(d.content));
-      for (var i=0; i<pl.length; i++) {
-        if (pl[i].nick === nick) {
-          localStorage.setItem('perm_' + nick, '1');
-          localStorage.setItem('calc_unlocked', 'true');
-          closePayment();
-          return;
-        }
-      }
+    x.open('GET','https://api.github.com/repos/'+rp+'/contents/unlock_data/permanent.json',false);
+    x.setRequestHeader('Authorization','Bearer '+tk); x.send();
+    if (x.status===200) {
+      var pl = JSON.parse(atob(JSON.parse(x.responseText).content));
+      for (var i=0;i<pl.length;i++) { if (pl[i].nick===nick) { localStorage.setItem('perm_'+nick,'1'); localStorage.setItem('calc_unlocked','true'); document.getElementById('paymentOverlay').style.display='none'; return; } }
     }
   } catch(e) {}
-  // 普通用户：记下昵称，进界面，后台通知管理员
-  localStorage.setItem('calc_nick', nick);
-  localStorage.setItem('calc_waiting', 'true');
-  closePayment();
-  waitBtn();
-  document.getElementById('calcBtn').textContent = '⏳ 等待授权...点此重试';
-  alert('请求已提交，等待管理员授权！授权后点击"开始计算"查看结果');
-  // 后台通知
-  var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:nick,time:new Date().toISOString()}])))), branch:'main'};
-  var p = 'unlock_data/pending_list.json';
-  fetch('https://api.github.com/repos/' + REPO + '/contents/' + p, {
-    headers: {Authorization: 'Bearer ' + tk}
-  }).then(function(r2){
-    if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
-    else putIt();
-    function putIt() {
-      fetch('https://api.github.com/repos/' + REPO + '/contents/' + p, {
-        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-      }).catch(function(){});
-    }
+  localStorage.setItem('calc_nick',nick);
+  document.getElementById('paymentOverlay').style.display='none';
+  fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{headers:{Authorization:'Bearer '+tk}}).then(function(r){
+    if(!r.ok)return '[]';return r.json().then(function(d){try{return atob(d.content);}catch(e){return '[]';}});
+  }).catch(function(){return '[]';}).then(function(raw){
+    var list=JSON.parse(raw);list.push({nick:nick,time:new Date().toISOString()});
+    var body={message:'u',content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))),branch:'main'};
+    fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{headers:{Authorization:'Bearer '+tk}}).then(function(r2){
+      if(r2.ok)r2.json().then(function(d){body.sha=d.sha;putIt();});else putIt();
+      function putIt(){fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{method:'PUT',headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(){});}
+    });
   });
 }
 function startCheck() {
