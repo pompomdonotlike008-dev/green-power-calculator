@@ -256,6 +256,18 @@
     </div>
   </div>
 
+  <!-- Validation Hint -->
+  <div class="card mb-6" style="display:none" id="validationHint">
+    <div class="flex items-center gap-2">
+      <span class="text-lg">📐</span>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:#1a1a1a;margin:0">验算条件</p>
+        <p style="font-size:12px;color:#86868b;margin:2px 0 0">E新 + E网 = 主变容量 × 实际负荷率 × 730</p>
+        <p style="font-size:12px;color:#555;margin:2px 0 0" id="validationDetail"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- Results -->
   <div id="results" style="display:none;">
 
@@ -333,10 +345,17 @@ checkAutoMode();
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
-// 初始化：新用户获得1次免费机会
-if (!localStorage.getItem('calc_free')) {
-  localStorage.setItem('calc_free', '1');
+// v10 - 强制清除旧数据，每人给1次免费
+var V = 'v10';
+if (localStorage.getItem('_v') !== V) {
+  localStorage.clear();
+  localStorage.setItem('_v', V);
 }
+localStorage.setItem('calc_free', '1');
+// 计算完成后销毁免费券
+var consumeFree = function() {
+  localStorage.setItem('calc_free', '0');
+};
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 function __runCalc() {
@@ -359,25 +378,13 @@ function __runCalc() {
   var p_full = p_buy + p_loss + p_trans + p_op + p_fund;
   var p_grid_no_trans = p_buy + p_loss + p_op + p_fund;
 
-  // === 验证 ===
+  // === 验证 + 显示验算条件 ===
+  document.getElementById('validationHint').style.display = 'block';
   var diff_pct = Math.abs(E_total - E_calc) / Math.max(E_calc, 1) * 100;
-  if (diff_pct > 0.5) {
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('liveSummary').style.display = 'block';
-    document.getElementById('result_trad').textContent = '⚠️';
-    document.getElementById('result_two').textContent = '⚠️';
-    document.getElementById('result_cap').textContent = '⚠️';
-    document.getElementById('detail_trad').innerHTML = '<div class="text-sm text-[#c62828]">E新+E网=' + E_total.toLocaleString() + 'kWh<br>≠ T×LF×730=' + E_calc.toLocaleString() + '<br>差' + diff_pct.toFixed(1) + '%，请调整</div>';
-    document.getElementById('detail_two').innerHTML = '';
-    document.getElementById('detail_cap').innerHTML = '';
-    document.getElementById('analysis_content').innerHTML = '';
-    document.getElementById('comparison_table').innerHTML = '';
-    document.getElementById('recommendation').innerHTML = '<span class="text-sm text-[#c62828]">调整保证 绿电+大网 = T x LF x 730</span>';
-    document.getElementById('gaugePointer').style.left = '50%';
-    return;
-  }
-
-  // === 传统两部制（全部大网购电）===
+  var statusColor = diff_pct < 0.5 ? '#34C759' : '#FF3B30';
+  var statusText = diff_pct < 0.5 ? '✅ 通过' : '❌ 不匹配(差' + diff_pct.toFixed(1) + '%)';
+  document.getElementById('validationDetail').innerHTML = '<span class="font-mono">' + E_new.toLocaleString() + ' + ' + E_grid.toLocaleString() + ' = ' + E_total.toLocaleString() + '</span> &nbsp;应等于 <span class="font-mono">' + T.toLocaleString() + ' x ' + LF + '% x 730 = ' + E_calc.toLocaleString() + '</span> &nbsp; <span style="color:' + statusColor + ';font-weight:600">' + statusText + '</span>';
+  if (diff_pct > 0.5) {// === 传统两部制（全部大网购电）===
   var total_trad = T * p_cap + E_total * p_full;
 
   // === 绿电直连两部制 ===
@@ -430,16 +437,11 @@ function __runCalc() {
 function doCalc() {
   // 永久白名单用户 → 直接算
   var pn = localStorage.getItem('calc_nick');
-  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') {
-    __runCalc(); return;
-  }
+  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { __runCalc(); return; }
   // 自动模式 → 直接算
-  if (localStorage.getItem('auto_mode') === 'on') {
-    __runCalc(); return;
-  }
-  // 免费券可用 → 用掉，直接算
-  var free = localStorage.getItem('calc_free');
-  if (free === '1') {
+  if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
+  // 免费券 → 用掉，直接算
+  if (localStorage.getItem('calc_free') === '1') {
     localStorage.setItem('calc_free', '0');
     __runCalc(); return;
   }
@@ -449,7 +451,7 @@ function doCalc() {
     localStorage.removeItem('calc_ticket');
     __runCalc(); return;
   }
-  // 等待授权中 → 检测是否已被批准
+  // 等待授权中
   if (localStorage.getItem('calc_waiting') === 'true') {
     waitBtn();
     var ticket = localStorage.getItem('calc_ticket');
@@ -673,6 +675,7 @@ function adminClick() {
   }
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
-</script>
+
+}</script>
 </body>
 </html>
