@@ -333,9 +333,7 @@
 <script>
 // 检查是否自动模式
 function checkAutoMode() {
-  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
+  var tk =   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
   }).then(function(r){
     if (!r.ok) { localStorage.removeItem('auto_mode'); return; }
@@ -347,16 +345,12 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 // v10 - 强制清除旧数据，每人给1次免费
-var V = 'v11';
-if (localStorage.getItem('_v') !== V) {
+if(!localStorage.getItem('_v12')){
   localStorage.clear();
-  localStorage.setItem('_v', V);
+  localStorage.setItem('_v12','1');
 }
-localStorage.setItem('calc_free', '1');
 // 计算完成后销毁免费券
-var consumeFree = function() {
-  localStorage.setItem('calc_free', '0');
-};
+
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 function __runCalc() {
@@ -385,7 +379,20 @@ function __runCalc() {
   var statusColor = diff_pct < 0.5 ? '#34C759' : '#FF3B30';
   var statusText = diff_pct < 0.5 ? '✅ 通过' : '❌ 不匹配(差' + diff_pct.toFixed(1) + '%)';
   document.getElementById('validationDetail').innerHTML = '<span class="font-mono">' + E_new.toLocaleString() + ' + ' + E_grid.toLocaleString() + ' = ' + E_total.toLocaleString() + '</span> &nbsp;应等于 <span class="font-mono">' + T.toLocaleString() + ' x ' + LF + '% x 730 = ' + E_calc.toLocaleString() + '</span> &nbsp; <span style="color:' + statusColor + ';font-weight:600">' + statusText + '</span>';
-  if (diff_pct > 0.5) {// === 传统两部制（全部大网购电）===
+  if (diff_pct > 0.5) {
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('liveSummary').style.display = 'block';
+    document.getElementById('result_two').textContent = '⚠️ 不匹配';
+    document.getElementById('result_cap').textContent = '⚠️ 不匹配';
+    document.getElementById('detail_two').innerHTML = '<div class="text-sm text-[#c62828]">绿电+大网=' + E_total.toLocaleString() + 'kWh<br>应等于 T x LF x 730 = ' + E_calc.toLocaleString() + '<br>相差 ' + diff_pct.toFixed(1) + '%，请调整参数</div>';
+    document.getElementById('detail_cap').innerHTML = '';
+    document.getElementById('analysis_content').innerHTML = '';
+    document.getElementById('comparison_table').innerHTML = '';
+    document.getElementById('recommendation').innerHTML = '<span class="text-sm text-[#c62828]">调整保证 绿电+大网 = T x LF x 730</span>';
+    document.getElementById('gaugePointer').style.left = '50%';
+    return;
+  }
+  // === 传统两部制（全部大网购电）===
   var total_trad = T * p_cap + E_total * p_full;
 
   // === 绿电直连两部制 ===
@@ -433,18 +440,56 @@ function __runCalc() {
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">输配电费</td><td class="p-2 text-center">已含</td><td class="p-2 text-center">已含</td><td class="p-2 text-center font-mono">' + fmt(trans_gc) + '</td></tr>' +
     '<tr><td class="p-2 font-bold">月度总电费</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px">¥ ' + fmt(total_trad) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
-
-}
 function doCalc() {
-  var nick=localStorage.getItem('calc_nick');
-  if(nick&&localStorage.getItem('perm_'+nick)==='1'){__runCalc();return;}
-  if(localStorage.getItem('auto_mode')==='on'){__runCalc();return;}
-  if(localStorage.getItem('calc_unlocked')){localStorage.removeItem('calc_unlocked');__runCalc();return;}
-  if(!localStorage.getItem('calc_used')){localStorage.setItem('calc_used','1');__runCalc();return;}
-  if(localStorage.getItem('calc_waiting')==='true'){waitBtn();__runCalc();return;} /*wait btn already showed, user can retry*/
+  // 永久白名单用户 → 直接算
+  var pn = localStorage.getItem('calc_nick');
+  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { __runCalc(); return; }
+  // 自动模式 → 直接算
+  if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
+  // 还没免费算过：免费一次
+  if (!localStorage.getItem('calc_used')) {
+    localStorage.setItem('calc_used', '1');
+    __runCalc(); return;
+  }
+  // 已解锁 → 算一次，用完即锁
+  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
+    localStorage.removeItem('calc_unlocked');
+    localStorage.removeItem('calc_ticket');
+    __runCalc(); return;
+  }
+  // 等待授权中
+  if (localStorage.getItem('calc_waiting') === 'true') {
+    waitBtn();
+    var ticket = localStorage.getItem('calc_ticket');
+    if (ticket) {
+      var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+      fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
+        headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+      }).then(function(r){
+        if (!r.ok) return;
+        r.json().then(function(d){
+          try {
+            var raw = atob(d.content);
+            var list;
+            try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+            for (var i=0;i<list.length;i++) {
+              if (list[i].ticket === ticket) {
+                localStorage.setItem('calc_unlocked', 'true');
+                localStorage.removeItem('calc_waiting');
+                resetBtn();
+                alert('✅ 已授权！点击"开始计算"');
+                return;
+              }
+            }
+          } catch(e) {}
+        });
+      }).catch(function(){});
+    }
+    return;
+  }
+  // 弹窗
   showPaymentWall();
-}
-function adminUnlock() {
+}function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
   var sum = 0; for(var i=0;i<6;i++) sum += parseInt(code[i]);
@@ -473,8 +518,7 @@ function waitBtn() {
     if (!nick || !ticket) { showPaymentWall(); return; }
     btn.textContent = '⏳ 检测中...';
     btn.style.pointerEvents = 'none';
-    var REPO = 'pompomdonotlike008-dev/green-power-calculator';
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+    var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
       headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
     }).then(function(r){
@@ -506,33 +550,62 @@ var adminClicks = 0;
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) return;
-  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked','true'); document.getElementById('paymentOverlay').style.display='none'; return; }
-  var tk = 'ghp_'+'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  var rp = 'pompomdonotlike008-dev/green-power-calculator';
-  try {
-    var x = new XMLHttpRequest();
-    x.open('GET','https://api.github.com/repos/'+rp+'/contents/unlock_data/permanent.json',false);
-    x.setRequestHeader('Authorization','Bearer '+tk); x.send();
-    if (x.status===200) {
-      var pl = JSON.parse(atob(JSON.parse(x.responseText).content));
-      for (var i=0;i<pl.length;i++) { if (pl[i].nick===nick) { localStorage.setItem('perm_'+nick,'1'); localStorage.setItem('calc_unlocked','true'); document.getElementById('paymentOverlay').style.display='none'; return; } }
-    }
-  } catch(e) {}
-  localStorage.setItem('calc_nick',nick);
-  document.getElementById('paymentOverlay').style.display='none';
-  fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{headers:{Authorization:'Bearer '+tk}}).then(function(r){
-    if(!r.ok)return '[]';return r.json().then(function(d){try{return atob(d.content);}catch(e){return '[]';}});
-  }).catch(function(){return '[]';}).then(function(raw){
-    var list=JSON.parse(raw);list.push({nick:nick,time:new Date().toISOString()});
-    var body={message:'u',content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))),branch:'main'};
-    fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{headers:{Authorization:'Bearer '+tk}}).then(function(r2){
-      if(r2.ok)r2.json().then(function(d){body.sha=d.sha;putIt();});else putIt();
-      function putIt(){fetch('https://api.github.com/repos/'+rp+'/contents/unlock_data/pending_list.json',{method:'PUT',headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(function(){});}
+  if (nick === 'key' || nick === 'KEY') {
+    localStorage.setItem('calc_unlocked', 'true');
+    closePayment(); return;
+  }
+  localStorage.removeItem('calc_used_nicks');
+  var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
+  localStorage.setItem('calc_ticket', ticket);
+  localStorage.setItem('calc_nick', nick);
+  localStorage.setItem('calc_waiting', 'true');
+  localStorage.removeItem('calc_unlocked');
+  closePayment();
+  // 检查是否永久白名单用户
+  var tk =   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) return;
+    r.json().then(function(d){
+      try {
+        var raw = atob(d.content);
+        var pList;
+        try { pList = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { pList = JSON.parse(raw); }
+        for (var i=0;i<pList.length;i++) {
+          if (pList[i].nick === nick) {
+            localStorage.setItem('calc_unlocked', 'true');
+            localStorage.setItem('calc_perm_' + nick, '1');
+            localStorage.removeItem('calc_waiting');
+            resetBtn();
+            alert('🎉 您是永久白名单用户，已自动解锁！');
+            return;
+          }
+        }
+      } catch(e) {}
+    });
+  }).catch(function(){});  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) return '[]';
+    return r.json().then(function(d){ try { return decodeURIComponent(escape(atob(d.content))); } catch(e) { try { return atob(d.content); } catch(e2) { return '[]'; } } });
+  }).catch(function(){ return '[]'; }).then(function(raw){
+    var list = JSON.parse(raw);
+    list.push({nick:nick, ticket:ticket, time:new Date().toISOString()});
+    var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
+    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+      headers: {Authorization: 'Bearer ' + tk}
+    }).then(function(r2){
+      if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
+      else putIt();
+      function putIt() {
+        fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }).then(function(){ startCheck(); }).catch(function(){});
+      }
     });
   });
 }
 function startCheck() {
-  var REPO = 'pompomdonotlike008-dev/green-power-calculator';
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   var ticket = localStorage.getItem('calc_ticket');
   if (!ticket) return;
@@ -571,29 +644,18 @@ function startCheck() {
 
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('liveSummary').style.display = 'none';
   updateBadge();
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
 }
-function canUse() {
-  var unlocked = localStorage.getItem('calc_unlocked') || '';
-  return getUsage() < FREE_USES || unlocked === 'true' || unlocked === 'admin';
-}
+
 function updateBadge() {
-  var used = getUsage();
   var badge = document.getElementById('usageBadge');
-  var remaining = FREE_USES - used;
-  if (remaining > 0) {
-    badge.textContent = '🆓 剩余 ' + remaining + ' 次免费';
-    badge.style.display = 'block';
-  } else {
-    var unlocked = localStorage.getItem('calc_unlocked') || '';
-    badge.textContent = unlocked ? '✅ 已解锁' : '🔒 关注解锁';
-    badge.style.display = 'block';
-  }
+  if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
+  if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
+  if (!localStorage.getItem('calc_used')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
 function adminClick() {
