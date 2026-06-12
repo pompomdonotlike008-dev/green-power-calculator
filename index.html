@@ -547,7 +547,8 @@ var adminClicks = 0;
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) return;
-  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked', 'true'); closePayment(); return; }
+  if (nick === 'key' || nick === 'KEY') { localStorage.setItem('calc_unlocked', 'true'); closePayment();
+  __runCalc(); return; }
   // 永久白名单检查
   var REPO = 'pompomdonotlike008-dev/green-power-calculator';
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
@@ -573,6 +574,9 @@ function unlockByFollow() {
   localStorage.setItem('calc_nick', nick);
   localStorage.setItem('calc_waiting', 'true');
   closePayment();
+  waitBtn();
+  document.getElementById('calcBtn').textContent = '⏳ 等待授权...点此重试';
+  alert('请求已提交，等待管理员授权！授权后点击"开始计算"查看结果');
   // 后台通知
   var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:nick,time:new Date().toISOString()}])))), branch:'main'};
   var p = 'unlock_data/pending_list.json';
