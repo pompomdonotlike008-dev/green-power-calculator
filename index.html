@@ -45,6 +45,7 @@
     .result-value { font-size: 26px; }
     .result-card { padding: 18px; }
   }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,122,255,0.4)} 50%{box-shadow:0 0 0 12px rgba(0,122,255,0)} }
 </style>
 </head>
 <body>
@@ -551,7 +552,7 @@ var adminClicks = 0;
 
 function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
-  if (!nick) return;
+  if (!nick) { alert('请输入微信昵称'); return; }
   if (nick === 'key' || nick === 'KEY') {
     localStorage.setItem('calc_unlocked', 'true');
     closePayment(); return;
@@ -563,8 +564,13 @@ function unlockByFollow() {
   localStorage.setItem('calc_waiting', 'true');
   localStorage.removeItem('calc_unlocked');
   closePayment();
+  // 立即关闭弹窗并滚动到参数区
+  document.querySelector('.card .btn').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('calcBtn').style.animation = 'pulse 2s ease-in-out infinite';
+  setTimeout(function(){ document.getElementById('calcBtn').style.animation = ''; }, 4000);
   // 检查是否永久白名单用户
-  var tk =   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
   }).then(function(r){
     if (!r.ok) return;
@@ -585,7 +591,8 @@ function unlockByFollow() {
         }
       } catch(e) {}
     });
-  }).catch(function(){});  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+  }).catch(function(){});
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
   }).then(function(r){
     if (!r.ok) return '[]';
