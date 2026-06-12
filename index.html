@@ -492,7 +492,153 @@ function doCalc() {
 
 // 计算入口（带付费检查）
 // 管理员激活：连续点击 ⚡ 5次
+
+function resetBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; btn.onclick = null; }
+}
+function waitBtn() {
+  var btn = document.getElementById('calcBtn');
+  if (!btn) return;
+  btn.textContent = '⏳ 等待授权...点此重试';
+  btn.style.opacity = '0.6';
+  btn.style.pointerEvents = 'auto';
+  btn.style.cursor = 'pointer';
+  btn.onclick = function(){
+    var nick = localStorage.getItem('calc_nick');
+    var ticket = localStorage.getItem('calc_ticket');
+    if (!nick || !ticket) { showPaymentWall(); return; }
+    btn.textContent = '⏳ 检测中...';
+    btn.style.pointerEvents = 'none';
+    var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
+      headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+    }).then(function(r){
+      if (!r.ok) { waitBtn(); return; }
+      r.json().then(function(d){
+        try {
+          var raw = atob(d.content);
+          var list;
+          try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+          for (var i=0;i<list.length;i++) {
+            if (list[i].ticket === ticket) {
+              localStorage.setItem('calc_unlocked', 'true');
+              localStorage.removeItem('calc_waiting');
+              resetBtn();
+              alert('✅ 已授权！');
+              return;
+            }
+          }
+        } catch(e) {}
+        waitBtn();
+      });
+    }).catch(function(){ waitBtn(); });
+  };
+}
+
 var adminClicks = 0;
+
+
+function unlockByFollow() {
+  var nick = document.getElementById('wechatNick').value.trim();
+  if (!nick) return;
+  if (nick === 'key' || nick === 'KEY') {
+    localStorage.setItem('calc_unlocked', 'true');
+    closePayment(); return;
+  }
+  localStorage.removeItem('calc_used_nicks');
+  var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
+  localStorage.setItem('calc_ticket', ticket);
+  localStorage.setItem('calc_nick', nick);
+  localStorage.setItem('calc_waiting', 'true');
+  localStorage.removeItem('calc_unlocked');
+  closePayment();
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+  }).then(function(r){
+    if (!r.ok) return '[]';
+    return r.json().then(function(d){ try { return decodeURIComponent(escape(atob(d.content))); } catch(e) { try { return atob(d.content); } catch(e2) { return '[]'; } } });
+  }).catch(function(){ return '[]'; }).then(function(raw){
+    var list = JSON.parse(raw);
+    list.push({nick:nick, ticket:ticket, time:new Date().toISOString()});
+    var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
+    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+      headers: {Authorization: 'Bearer ' + tk}
+    }).then(function(r2){
+      if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
+      else putIt();
+      function putIt() {
+        fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/pending_list.json', {
+          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }).then(function(){ startCheck(); }).catch(function(){});
+      }
+    });
+  });
+}
+function startCheck() {
+  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  var ticket = localStorage.getItem('calc_ticket');
+  if (!ticket) return;
+  var intv = setInterval(function(){
+    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
+      headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+    }).then(function(r){
+      if (!r.ok) return;
+      r.json().then(function(d){
+        try {
+          var raw = atob(d.content);
+          var list;
+          try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
+          for (var i=0;i<list.length;i++) {
+            if (list[i].ticket === ticket) {
+              clearInterval(intv);
+              localStorage.setItem('calc_unlocked', 'true');
+              localStorage.removeItem('calc_waiting');
+              resetBtn();
+              if (document.hidden) {
+                document.title = '✅ 已授权！请返回计算器';
+                setTimeout(function(){ location.reload(); }, 3000);
+              } else {
+                alert('✅ 管理员已授权，请点击"开始计算"！');
+              }
+              return;
+            }
+          }
+        } catch(e) {}
+      });
+    }).catch(function(){});
+  }, 1000);
+  setTimeout(function(){ clearInterval(intv); localStorage.removeItem('calc_waiting'); }, 600000);
+}
+
+
+function closePayment() {
+  document.getElementById('paymentOverlay').style.display = 'none';
+  updateBadge();
+  if (canUse()) __runCalc();
+}
+function showPaymentWall() {
+  document.getElementById('paymentOverlay').style.display = 'flex';
+}
+function canUse() {
+  var unlocked = localStorage.getItem('calc_unlocked') || '';
+  return getUsage() < FREE_USES || unlocked === 'true' || unlocked === 'admin';
+}
+function updateBadge() {
+  var used = getUsage();
+  var badge = document.getElementById('usageBadge');
+  var remaining = FREE_USES - used;
+  if (remaining > 0) {
+    badge.textContent = '🆓 剩余 ' + remaining + ' 次免费';
+    badge.style.display = 'block';
+  } else {
+    var unlocked = localStorage.getItem('calc_unlocked') || '';
+    badge.textContent = unlocked ? '✅ 已解锁' : '🔒 关注解锁';
+    badge.style.display = 'block';
+  }
+}
+
 function adminClick() {
   adminClicks++;
   if (adminClicks >= 5) {
