@@ -53,7 +53,7 @@
 <!-- Payment Wall -->
 <div class="usage-badge" id="usageBadge">加载中</div>
 
-<div class="payment-overlay" id="paymentOverlay" style="display:none">
+<div class="payment-overlay" id="paymentOverlay">
   <div class="payment-modal">
     <div class="payment-step active" id="payStep1">
       <span style="font-size:48px">🔒</span>
@@ -347,9 +347,10 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // 最终迁移：只清 _used 一次，之后不再碰用户数据
+  // 最终迁移：清理旧版残留，之后不再碰用户数据
   if (!localStorage.getItem('__v2')) {
     localStorage.removeItem('calc_used');
+    localStorage.removeItem('_used');
     localStorage.removeItem('_v14');
     localStorage.removeItem('_v15');
     localStorage.setItem('__v2', '1');
@@ -638,41 +639,28 @@ function unlockByFollow() {
     localStorage.setItem('calc_waiting', 'true');
     localStorage.removeItem('calc_unlocked');
   } catch(e) {}
+  // 写入 pending_list（不用 retry，如果冲突用户重试即可）
   fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
     headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
   }).then(function(r){
-    if (!r.ok) return '[]';
-    return r.json().then(function(d){ try { return decodeURIComponent(escape(atob(d.content))); } catch(e) { try { return atob(d.content); } catch(e2) { return '[]'; } } });
-  }).catch(function(){ return '[]'; }).then(function(raw){
-    var list = JSON.parse(raw);
-    list.push({nick:myNick, ticket:ticket, time:new Date().toISOString()});
-    var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
-    (function tryPut(cnt){
-      if (!cnt) cnt = 3;
+    if (!r.ok) {
+      // 文件不存在，直接创建
+      var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:myNick, ticket:ticket, time:new Date().toISOString()}])))), branch:'main'};
       fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-        headers: {Authorization: 'Bearer ' + tk}
-      }).then(function(r2){
-        if (r2.ok) {
-          r2.json().then(function(d){
-            body.sha = d.sha;
-            fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-              method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-            }).then(function(r3){
-              if (r3.status === 409 && cnt > 0) { setTimeout(function(){ tryPut(cnt-1); }, 500); }
-              else if (r3.ok) { startCheck(); }
-            }).catch(function(){});
-          });
-        } else {
-          fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-            method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-          }).then(function(r3){
-            if (r3.status === 409 && cnt > 0) { setTimeout(function(){ tryPut(cnt-1); }, 500); }
-            else if (r3.ok) { startCheck(); }
-          }).catch(function(){});
-        }
-      }).catch(function(){});
-    })();
-  });
+        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+      }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
+      return;
+    }
+    return r.json().then(function(d){
+      var raw = decodeURIComponent(escape(atob(d.content)));
+      try { var list = JSON.parse(raw); } catch(e) { var list = JSON.parse(atob(d.content)); }
+      list.push({nick:myNick, ticket:ticket, time:new Date().toISOString()});
+      var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main', sha:d.sha};
+      fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+      }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
+    });
+  }).catch(function(){});
 }
 function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
@@ -754,16 +742,15 @@ function adminClick() {
 // 初始化：（兼容微信X5跨块函数调用限制）
 try {
   updateBadge();  // 始终更新状态徽章
-  // 已解锁/永久用户 → 覆盖层隐藏（默认已隐藏），更新状态
+  // 覆盖层默认显示（CSS display:flex），根据用户状态决定是否隐藏
   var _unlocked = localStorage.getItem('calc_unlocked');
   var _auto = localStorage.getItem('auto_mode');
-  if (_unlocked || _auto === 'on') {
-  }
   var _pn = localStorage.getItem('calc_nick');
   var _isPerm = false;
+  // 永久白名单检查
   if (_pn && localStorage.getItem('calc_perm_' + _pn) === '1') {
     _isPerm = true;
-    localStorage.setItem('calc_unlocked', 'true');
+    try { localStorage.setItem('calc_unlocked', 'true'); } catch(e) {}
     updateBadge();
   }
   // 有昵称但 calc_perm_ 未设置 → 同步检查 permanent.json（兼容 setItem 失败的场景）
@@ -786,11 +773,13 @@ try {
       }
     } catch(e) {}
   }
-  // 需要授权：已用免费次数 + 未解锁 + 非自动模式 + 非永久用户
-  if (localStorage.getItem('_used') && !_unlocked && _auto !== 'on') {
-    if (!_pn || !_isPerm) {
-      document.getElementById('paymentOverlay').style.display = 'flex';
-    }
+  // 已解锁/永久用户/自动模式 → 隐藏覆盖层
+  if (_unlocked || _isPerm || _pn && localStorage.getItem('calc_perm_' + _pn) === '1' || _auto === 'on') {
+    document.getElementById('paymentOverlay').style.display = 'none';
+  }
+  // 如果正在等待授权，启动轮询
+  if (localStorage.getItem('calc_waiting') === 'true') {
+    startCheck();
   }
 } catch(e) {}
 </script>
