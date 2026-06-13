@@ -347,14 +347,17 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // __v3: 清理 _used 残留，之后不再碰用户数据
-  if (!localStorage.getItem('__v3')) {
-    localStorage.removeItem('calc_used');
-    localStorage.removeItem('_used');
+  // _v5: 全新免费追踪键 _5fr，绝无残留
+  if (!localStorage.getItem('_v5')) {
+    localStorage.removeItem('_5fr');
+    localStorage.removeItem('_5fr');
+    localStorage.removeItem('calc_free');
     localStorage.removeItem('_v14');
     localStorage.removeItem('_v15');
     localStorage.removeItem('__v2');
-    localStorage.setItem('__v3', '1');
+    localStorage.removeItem('__v3');
+    localStorage.removeItem('_5fr');
+    localStorage.setItem('_v5', '1');
   }
 } catch(e) {}
 
@@ -499,8 +502,8 @@ function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次
-  if (!localStorage.getItem('_used')) {
-    localStorage.setItem('_used', '1');
+  if (!localStorage.getItem('_5fr')) {
+    localStorage.setItem('_5fr', '1');
     __runCalc(); return;
   }
   // 已解锁 → 算一次，用完即锁
@@ -635,7 +638,7 @@ function unlockByFollow() {
   // 保存昵称
   try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
   // 如果已经用掉免费次数，才进入等待授权流程
-  if (localStorage.getItem('_used') === '1') {
+  if (localStorage.getItem('_5fr') === '1') {
     try {
       var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
       localStorage.setItem('calc_ticket', ticket);
@@ -709,7 +712,7 @@ function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
-  if (!localStorage.getItem('_used')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  if (!localStorage.getItem('_5fr')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
