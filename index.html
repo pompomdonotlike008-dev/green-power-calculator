@@ -370,7 +370,7 @@ try {
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 function __runCalc() {
-  // 清零上次结果
+  // 清零上次结果 + 显示计算中提示
   try {
     document.getElementById('result_trad').textContent = '';
     document.getElementById('result_two').textContent = '';
@@ -385,6 +385,8 @@ function __runCalc() {
     document.getElementById('liveSummary').style.display = 'none';
     document.getElementById('results').style.display = 'none';
     document.getElementById('validationHint').style.display = 'none';
+    var _calcBtn = document.getElementById('calcBtn');
+    if (_calcBtn) { _calcBtn.textContent = '📊 计算中...'; }
   } catch(e) {}
   var T = parseFloat(document.getElementById('T').value) || 0;
   var p_cap = parseFloat(document.getElementById('p_cap').value) || 0;
@@ -494,7 +496,9 @@ function __runCalc() {
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">输配电费</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(trans_gc) + '</td></tr>' +
     '<tr><td class="p-1.5 font-bold" style="font-size:13px">月总电费</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px">¥ ' + fmt(total_trad) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
-  }
+  // 恢复按钮文字
+  try { document.getElementById('calcBtn').textContent = '⚡ 开始计算'; } catch(e) {}
+}
 function doCalc() {
   try {
   // 永久白名单用户 → 直接算
@@ -579,45 +583,15 @@ function doCalc() {
 
 function resetBtn() {
   var btn = document.getElementById('calcBtn');
-  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; btn.onclick = doCalc; }
+  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; }
 }
 function waitBtn() {
   var btn = document.getElementById('calcBtn');
   if (!btn) return;
-  btn.textContent = '⏳ 等待授权...点此重试';
+  btn.textContent = '⏳ 等待授权...';
   btn.style.opacity = '0.6';
   btn.style.pointerEvents = 'auto';
   btn.style.cursor = 'pointer';
-  btn.onclick = function(){
-    var nick = localStorage.getItem('calc_nick');
-    var ticket = localStorage.getItem('calc_ticket');
-    if (!nick || !ticket) { showPaymentWall(); return; }
-    btn.textContent = '⏳ 检测中...';
-    btn.style.pointerEvents = 'none';
-    var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-    fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
-      headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-    }).then(function(r){
-      if (!r.ok) { waitBtn(); return; }
-      r.json().then(function(d){
-        try {
-          var raw = atob(d.content);
-          var list;
-          try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
-          for (var i=0;i<list.length;i++) {
-            if (list[i].ticket === ticket) {
-              localStorage.setItem('calc_unlocked', 'true');
-              localStorage.removeItem('calc_waiting');
-              resetBtn();
-              alert('✅ 已授权！');
-              return;
-            }
-          }
-        } catch(e) {}
-        waitBtn();
-      });
-    }).catch(function(){ waitBtn(); });
-  };
 }
 
 var adminClicks = 0;
