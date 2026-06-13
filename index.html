@@ -343,19 +343,19 @@ function checkAutoMode() {
   }).catch(function(){ localStorage.removeItem('auto_mode'); });
 }
 checkAutoMode();
-updateBadge();
-// 已解锁/永久用户自动隐藏弹窗
-if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') === 'on') {
-  document.getElementById('paymentOverlay').style.display = 'none';
-}
-// 检查永久白名单用户
-(function(){
-  var pn = localStorage.getItem('calc_nick');
-  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') {
-    localStorage.setItem('calc_unlocked', 'true');
+try {
+  updateBadge();
+  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') === 'on') {
     document.getElementById('paymentOverlay').style.display = 'none';
   }
-})();
+  (function(){
+    var pn = localStorage.getItem('calc_nick');
+    if (pn && localStorage.getItem('calc_perm_' + pn) === '1') {
+      localStorage.setItem('calc_unlocked', 'true');
+      document.getElementById('paymentOverlay').style.display = 'none';
+    }
+  })();
+} catch(e) {}
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
@@ -681,7 +681,7 @@ function startCheck() {
 
 function closePayment() {
   document.getElementById('paymentOverlay').style.display = 'none';
-  updateBadge();
+  try { updateBadge(); } catch(e) {}
 }
 function showPaymentWall() {
   document.getElementById('paymentOverlay').style.display = 'flex';
@@ -706,6 +706,19 @@ function adminClick() {
   }
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
+
+// 初始化：确保覆盖层隐藏逻辑运行（兼容微信X5跨块函数调用限制）
+try {
+  updateBadge();
+  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') === 'on') {
+    document.getElementById('paymentOverlay').style.display = 'none';
+  }
+  var _pn = localStorage.getItem('calc_nick');
+  if (_pn && localStorage.getItem('calc_perm_' + _pn) === '1') {
+    localStorage.setItem('calc_unlocked', 'true');
+    document.getElementById('paymentOverlay').style.display = 'none';
+  }
+} catch(e) {}
 
 }</script>
 </body>
