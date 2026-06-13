@@ -441,6 +441,11 @@ function __runCalc() {
 
   document.getElementById('result_two').textContent = '¥ ' + fmt(total_g2);
   document.getElementById('result_cap').textContent = '¥ ' + fmt(total_gc);
+  document.getElementById('result_trad').textContent = '¥ ' + fmt(total_trad);
+  document.getElementById('detail_trad').innerHTML =
+    '<div class="result-item"><span>容量电费</span><span class="font-mono">' + fmt(T * p_cap) + '</span></div>' +
+    '<div class="result-item"><span>大网购电</span><span class="font-mono">' + fmt(E_total * p_full) + '</span></div>' +
+    '<div class="result-item"><span>输配电费</span><span class="font-mono">已含在电度电价中</span></div>';
   document.getElementById('detail_two').innerHTML =
     '<div class="result-item"><span>容量电费</span><span class="font-mono">' + fmt(cap_g2) + '</span></div>' +
     '<div class="result-item"><span>绿电购电</span><span class="font-mono">' + fmt(green_g2) + '</span></div>' +
