@@ -344,6 +344,18 @@ function checkAutoMode() {
 }
 checkAutoMode();
 updateBadge();
+// 已解锁/永久用户自动隐藏弹窗
+if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') === 'on') {
+  document.getElementById('paymentOverlay').style.display = 'none';
+}
+// 检查永久白名单用户
+(function(){
+  var pn = localStorage.getItem('calc_nick');
+  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') {
+    localStorage.setItem('calc_unlocked', 'true');
+    document.getElementById('paymentOverlay').style.display = 'none';
+  }
+})();
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
@@ -564,10 +576,15 @@ function unlockByFollow() {
   localStorage.setItem('calc_waiting', 'true');
   localStorage.removeItem('calc_unlocked');
   closePayment();
-  // 立即关闭弹窗并滚动到参数区
-  document.querySelector('.card .btn').scrollIntoView({behavior:'smooth', block:'center'});
-  document.getElementById('calcBtn').style.animation = 'pulse 2s ease-in-out infinite';
-  setTimeout(function(){ document.getElementById('calcBtn').style.animation = ''; }, 4000);
+  // 视觉提示：闪烁按钮
+  try {
+    var btn = document.getElementById('calcBtn');
+    if (btn) {
+      btn.scrollIntoView({behavior:'smooth', block:'center'});
+      btn.style.animation = 'pulse 2s ease-in-out infinite';
+      setTimeout(function(){ if(btn) btn.style.animation = ''; }, 4000);
+    }
+  } catch(e) {}
   // 检查是否永久白名单用户
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
