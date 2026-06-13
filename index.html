@@ -347,19 +347,9 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // _v5: 全新免费追踪键 _5fr，绝无残留
-  if (!localStorage.getItem('_v5')) {
-    localStorage.removeItem('_5fr');
-    localStorage.removeItem('_5fr');
-    localStorage.removeItem('calc_free');
-    localStorage.removeItem('_v14');
-    localStorage.removeItem('_v15');
-    localStorage.removeItem('__v2');
-    localStorage.removeItem('__v3');
-    localStorage.removeItem('_5fr');
-    localStorage.setItem('_v5', '1');
-  }
+  // 不再需要版本迁移：用内存变量追踪免费次数，不受 localStorage 限制
 } catch(e) {}
+var _freeUsed = false;
 
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
@@ -502,8 +492,8 @@ function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次
-  if (!localStorage.getItem('_5fr')) {
-    localStorage.setItem('_5fr', '1');
+  if (!_freeUsed) {
+    _freeUsed = true;
     __runCalc(); return;
   }
   // 已解锁 → 直接算（不限次，受每日30次限制）
@@ -636,7 +626,7 @@ function unlockByFollow() {
   // 保存昵称
   try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
   // 如果已经用掉免费次数，才进入等待授权流程
-  if (localStorage.getItem('_5fr') === '1') {
+  if (_freeUsed) {
     try {
       var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
       localStorage.setItem('calc_ticket', ticket);
@@ -710,7 +700,7 @@ function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
-  if (!localStorage.getItem('_5fr')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  if (!_freeUsed) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
