@@ -88,7 +88,8 @@ function tm() {
 
 function gh(g, m, d) {
   var o = { headers: { Authorization: 'Bearer '+TK, Accept: 'application/vnd.github.v3+json' } };
-  if (d) { o.method = 'PUT'; o.body = JSON.stringify(d); o.headers['Content-Type'] = 'application/json'; }
+  if (m === 'DELETE') { o.method = 'DELETE'; o.body = JSON.stringify(d); o.headers['Content-Type'] = 'application/json'; }
+  else if (d) { o.method = 'PUT'; o.body = JSON.stringify(d); o.headers['Content-Type'] = 'application/json'; }
   else if (m) o.method = m;
   return fetch('https://api.github.com/repos/'+REPO+'/contents/'+g, o);
 }
