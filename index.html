@@ -347,10 +347,12 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // _v15: 现在所有用户清一次，之后永不清除
-  if(!localStorage.getItem('_v15')){
-    localStorage.clear();
-    localStorage.setItem('_v15','1');
+  // 最终迁移：只清 _used 一次，之后不再碰用户数据
+  if (!localStorage.getItem('__v2')) {
+    localStorage.removeItem('calc_used');
+    localStorage.removeItem('_v14');
+    localStorage.removeItem('_v15');
+    localStorage.setItem('__v2', '1');
   }
 } catch(e) {}
 
@@ -495,8 +497,8 @@ function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次
-  if (!localStorage.getItem('calc_used')) {
-    localStorage.setItem('calc_used', '1');
+  if (!localStorage.getItem('_used')) {
+    localStorage.setItem('_used', '1');
     __runCalc(); return;
   }
   // 已解锁 → 算一次，用完即锁
@@ -716,7 +718,7 @@ function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
-  if (!localStorage.getItem('calc_used')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  if (!localStorage.getItem('_used')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
@@ -785,7 +787,7 @@ try {
     } catch(e) {}
   }
   // 需要授权：已用免费次数 + 未解锁 + 非自动模式 + 非永久用户
-  if (localStorage.getItem('calc_used') && !_unlocked && _auto !== 'on') {
+  if (localStorage.getItem('_used') && !_unlocked && _auto !== 'on') {
     if (!_pn || !_isPerm) {
       document.getElementById('paymentOverlay').style.display = 'flex';
     }
