@@ -655,20 +655,32 @@ function unlockByFollow() {
     var list = JSON.parse(raw);
     list.push({nick:myNick, ticket:ticket, time:new Date().toISOString()});
     var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main'};
-    fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-      headers: {Authorization: 'Bearer ' + tk}
-    }).then(function(r2){
-      if (r2.ok) r2.json().then(function(d){ body.sha = d.sha; putIt(); });
-      else putIt();
-      function putIt() {
-        fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-        }).then(function(){ startCheck(); }).catch(function(){});
-      }
-    });
+    (function tryPut(cnt){
+      if (!cnt) cnt = 3;
+      fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+        headers: {Authorization: 'Bearer ' + tk}
+      }).then(function(r2){
+        if (r2.ok) {
+          r2.json().then(function(d){
+            body.sha = d.sha;
+            fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+              method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+            }).then(function(r3){
+              if (r3.status === 409 && cnt > 0) { setTimeout(function(){ tryPut(cnt-1); }, 500); }
+              else if (r3.ok) { startCheck(); }
+            }).catch(function(){});
+          });
+        } else {
+          fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+            method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+          }).then(function(r3){
+            if (r3.status === 409 && cnt > 0) { setTimeout(function(){ tryPut(cnt-1); }, 500); }
+          }).catch(function(){});
+        }
+      }).catch(function(){});
+    })();
   });
 }
-function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   var ticket = localStorage.getItem('calc_ticket');
   if (!ticket) return;
