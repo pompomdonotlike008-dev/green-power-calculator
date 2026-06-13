@@ -54,6 +54,7 @@
 <div class="usage-badge" id="usageBadge">加载中</div>
 
 <div class="payment-overlay" id="paymentOverlay" style="display:flex!important">
+<script>document.getElementById('paymentOverlay').style.display='flex'</script>
   <div class="payment-modal">
     <div class="payment-step active" id="payStep1">
       <span style="font-size:48px">🔒</span>
@@ -334,7 +335,7 @@
 <script>
 try { if (!localStorage.getItem('_v8')) { localStorage.clear(); localStorage.setItem('_v8', '1'); } } catch(e) {}
 var _click = 0;
-function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 function __runCalc() {
   // 清零上次结果 + 显示计算中提示
