@@ -631,36 +631,38 @@ function unlockByFollow() {
     setTimeout(function(){ __runCalc(); }, 100);
     return;
   }
-  // 非永久 → 进入等待授权流程
-  try {
-    var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
-    localStorage.setItem('calc_ticket', ticket);
-    localStorage.setItem('calc_nick', myNick);
-    localStorage.setItem('calc_waiting', 'true');
-    localStorage.removeItem('calc_unlocked');
-  } catch(e) {}
-  // 写入 pending_list（不用 retry，如果冲突用户重试即可）
-  fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-  }).then(function(r){
-    if (!r.ok) {
-      // 文件不存在，直接创建
-      var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:myNick, ticket:ticket, time:new Date().toISOString()}])))), branch:'main'};
-      fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-      }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
-      return;
-    }
-    return r.json().then(function(d){
-      var raw = decodeURIComponent(escape(atob(d.content)));
-      try { var list = JSON.parse(raw); } catch(e) { var list = JSON.parse(atob(d.content)); }
-      list.push({nick:myNick, ticket:ticket, time:new Date().toISOString()});
-      var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main', sha:d.sha};
-      fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
-        method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
-      }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
-    });
-  }).catch(function(){});
+  // 保存昵称
+  try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
+  // 如果已经用掉免费次数，才进入等待授权流程
+  if (localStorage.getItem('_used') === '1') {
+    try {
+      var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
+      localStorage.setItem('calc_ticket', ticket);
+      localStorage.setItem('calc_waiting', 'true');
+      localStorage.removeItem('calc_unlocked');
+    } catch(e) {}
+    // 写入 pending_list
+    fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+      headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
+    }).then(function(r){
+      if (!r.ok) {
+        var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify([{nick:myNick, ticket:ticket, time:new Date().toISOString()}])))), branch:'main'};
+        fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
+        return;
+      }
+      return r.json().then(function(d){
+        var raw = decodeURIComponent(escape(atob(d.content)));
+        try { var list = JSON.parse(raw); } catch(e) { var list = JSON.parse(atob(d.content)); }
+        list.push({nick:myNick, ticket:ticket, time:new Date().toISOString()});
+        var body = {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))), branch:'main', sha:d.sha};
+        fetch('https://api.github.com/repos/' + rp + '/contents/unlock_data/pending_list.json', {
+          method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
+        }).then(function(r2){ if (r2.ok) startCheck(); }).catch(function(){});
+      });
+    }).catch(function(){});
+  }
 }
 function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
