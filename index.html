@@ -413,7 +413,7 @@ function __runCalc() {
 
   // === 绿电直连两部制 ===
   var cap_g2 = T * p_cap;
-  var green_g2 = E_new * (p_protocol + p_loss + p_trans + p_op + p_fund);
+  var green_g2 = E_new * (p_protocol + p_fund);
   var grid_g2 = E_grid * p_full;
   var total_g2 = cap_g2 + green_g2 + grid_g2;
 
@@ -462,7 +462,7 @@ function __runCalc() {
       '<div class="bg-[#f5f5f7] rounded-xl p-3 text-center"><p class="text-xs text-[#86868b]">绿电两部制</p><p class="text-sm font-bold mt-1 text-[#b8942e]">¥ ' + fmt(total_g2) + '</p></div>' +
       '<div class="bg-[#f5f5f7] rounded-xl p-3 text-center"><p class="text-xs text-[#86868b]">绿电容量制</p><p class="text-sm font-bold mt-1 text-[#007AFF]">¥ ' + fmt(total_gc) + '</p></div>' +
       '<div class="rounded-xl p-3 text-center ' + (diff<0?'bg-[#e8f5e9]':diff>0?'bg-[#fff5f5]':'bg-[#f5f5f7]') + '">' +
-        '<p class="text-xs text-[#86868b]">两部→容量</p><p class="text-sm font-bold mt-1 ' + (diff<0?'text-[#2e7d32]':diff>0?'text-[#c62828]':'text-[#86868b]') + '">' + (diff<0?'- ':'+ ')+'¥ ' + fmt(diffAbs) + '</p></div>' +
+        '<p class="text-xs text-[#86868b]">绿电两部→绿电容量</p><p class="text-sm font-bold mt-1 ' + (diff<0?'text-[#2e7d32]':diff>0?'text-[#c62828]':'text-[#86868b]') + '">' + (diff<0?'- ':'+ ')+'¥ ' + fmt(diffAbs) + '</p></div>' +
     '</div>' +
     '<hr class="my-3 border-[#e5e5ea]">' +
     '<div class="flex items-center gap-2 text-sm"><span class="font-semibold">判断：</span>LF = ' + LF + '%, LFm = ' + LFm + '% -> ' +
