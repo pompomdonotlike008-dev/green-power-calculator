@@ -53,7 +53,7 @@
 <!-- Payment Wall -->
 <div class="usage-badge" id="usageBadge">🆓 剩余 1 次免费</div>
 
-<div class="payment-overlay" id="paymentOverlay">
+<div class="payment-overlay" id="paymentOverlay" style="display:none">
   <div class="payment-modal">
     <div class="payment-step active" id="payStep1">
       <span style="font-size:48px">🔒</span>
@@ -457,6 +457,7 @@ function __runCalc() {
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">输配电费</td><td class="p-2 text-center">已含</td><td class="p-2 text-center">已含</td><td class="p-2 text-center font-mono">' + fmt(trans_gc) + '</td></tr>' +
     '<tr><td class="p-2 font-bold">月度总电费</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px">¥ ' + fmt(total_trad) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
+  }
 function doCalc() {
   try {
   // 永久白名单用户 → 直接算
@@ -707,19 +708,26 @@ function adminClick() {
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
 
-// 初始化：确保覆盖层隐藏逻辑运行（兼容微信X5跨块函数调用限制）
+// 初始化：（兼容微信X5跨块函数调用限制）
 try {
-  updateBadge();
-  if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') === 'on') {
-    document.getElementById('paymentOverlay').style.display = 'none';
+  // 已解锁/永久用户 → 覆盖层隐藏（默认已隐藏），更新状态
+  var _unlocked = localStorage.getItem('calc_unlocked');
+  var _auto = localStorage.getItem('auto_mode');
+  if (_unlocked || _auto === 'on') {
+    updateBadge();
   }
   var _pn = localStorage.getItem('calc_nick');
   if (_pn && localStorage.getItem('calc_perm_' + _pn) === '1') {
     localStorage.setItem('calc_unlocked', 'true');
-    document.getElementById('paymentOverlay').style.display = 'none';
+    updateBadge();
+  }
+  // 需要授权：已用免费次数 + 未解锁 + 非自动模式 + 非永久用户
+  if (localStorage.getItem('calc_used') && !_unlocked && _auto !== 'on') {
+    if (!_pn || (_pn && localStorage.getItem('calc_perm_' + _pn) !== '1')) {
+      document.getElementById('paymentOverlay').style.display = 'flex';
+    }
   }
 } catch(e) {}
-
-}</script>
+</script>
 </body>
 </html>
