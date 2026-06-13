@@ -53,7 +53,7 @@
 <!-- Payment Wall -->
 <div class="usage-badge" id="usageBadge">加载中</div>
 
-<div class="payment-overlay" id="paymentOverlay">
+<div class="payment-overlay" id="paymentOverlay" style="display:flex">
   <div class="payment-modal">
     <div class="payment-step active" id="payStep1">
       <span style="font-size:48px">🔒</span>
@@ -346,8 +346,12 @@ checkAutoMode();
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
-try { document.getElementById('paymentOverlay').style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(0,0,0,0.5)'; } catch(e) {}
-var _freeDone = false;
+function _hasFree() {
+  try { return !localStorage.getItem('_fr1'); } catch(e) { return false; }
+}
+function _useFree() {
+  try { localStorage.setItem('_fr1', '1'); } catch(e) {}
+}
 
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
@@ -490,7 +494,7 @@ function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次（内存变量，刷新即重置）
-  if (!_freeDone) { _freeDone = true; __runCalc(); return; }
+  if (_hasFree()) { _useFree(); __runCalc(); return; }
   // 已解锁 → 直接算（不限次，受每日30次限制）
   if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
     var _c_nick = localStorage.getItem('calc_nick');
@@ -622,7 +626,7 @@ function unlockByFollow() {
   try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
   // 如果已经用掉免费次数，才进入等待授权流程（sessionStorage 可能抛出，包try-catch）
   var _freeUsed = true;
-  if (_freeDone) {
+  if (!_hasFree()) {
     try {
       var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
       localStorage.setItem('calc_ticket', ticket);
@@ -696,7 +700,7 @@ function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
-if (!_freeDone) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  if (_hasFree()) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
