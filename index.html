@@ -506,10 +506,8 @@ function doCalc() {
     localStorage.setItem('_5fr', '1');
     __runCalc(); return;
   }
-  // 已解锁 → 算一次，用完即锁
+  // 已解锁 → 直接算（不限次，受每日30次限制）
   if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
-    localStorage.removeItem('calc_unlocked');
-    localStorage.removeItem('calc_ticket');
     var _c_nick = localStorage.getItem('calc_nick');
     if (_c_nick && !checkDailyLimit(_c_nick)) return;
     __runCalc(); return;
