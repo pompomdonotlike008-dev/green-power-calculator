@@ -110,7 +110,7 @@ async function approveAll() {
       try { approvedList = JSON.parse(decodeURIComponent(escape(raw2))); } catch(e) { approvedList = JSON.parse(raw2); }
     }
     for (var item of list) approvedList.push(item);
-    await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main'});
+    await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main', sha:ad.sha});
     await gh('unlock_data/pending_list.json', 'DELETE', {message:'u', sha:d.sha, branch:'main'});
     ld();
   } catch(e) {}
