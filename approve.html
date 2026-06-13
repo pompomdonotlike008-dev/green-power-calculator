@@ -102,15 +102,18 @@ async function approveAll() {
     var list;
     try { list = JSON.parse(decodeURIComponent(escape(raw))); } catch(e) { list = JSON.parse(raw); }
     if (!list.length) return;
-    var ar = await gh('unlock_data/approved_list.json');
     var approvedList = [];
+    var ar = await gh('unlock_data/approved_list.json');
     if (ar.ok) {
       var ad = await ar.json();
       var raw2 = atob(ad.content);
       try { approvedList = JSON.parse(decodeURIComponent(escape(raw2))); } catch(e) { approvedList = JSON.parse(raw2); }
+      for (var item of list) approvedList.push(item);
+      await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main', sha:ad.sha});
+    } else {
+      for (var item of list) approvedList.push(item);
+      await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main'});
     }
-    for (var item of list) approvedList.push(item);
-    await gh('unlock_data/approved_list.json', null, {message:'u', content:btoa(unescape(encodeURIComponent(JSON.stringify(approvedList)))), branch:'main', sha:ad.sha});
     await gh('unlock_data/pending_list.json', 'DELETE', {message:'u', sha:d.sha, branch:'main'});
     ld();
   } catch(e) {}
