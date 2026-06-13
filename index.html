@@ -346,6 +346,8 @@ checkAutoMode();
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
+// ★ 一次性版本清理：_v7不存在时清除所有localStorage，之后永不清除
+try { if (!localStorage.getItem('_v7')) { localStorage.clear(); localStorage.setItem('_v7', '1'); } } catch(e) {}
 function _hasFree() {
   try { return !localStorage.getItem('_fr1'); } catch(e) { return false; }
 }
