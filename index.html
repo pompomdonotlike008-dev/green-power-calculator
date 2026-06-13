@@ -568,15 +568,10 @@ function unlockByFollow() {
   var nick = document.getElementById('wechatNick').value.trim();
   if (!nick) { alert('请输入微信昵称'); return; }
   if (nick === 'key' || nick === 'KEY') {
-    localStorage.setItem('calc_unlocked', 'true');
+    try { localStorage.setItem('calc_unlocked', 'true'); } catch(e) {}
     closePayment(); return;
   }
-  localStorage.removeItem('calc_used_nicks');
-  var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
-  localStorage.setItem('calc_ticket', ticket);
-  localStorage.setItem('calc_nick', nick);
-  localStorage.setItem('calc_waiting', 'true');
-  localStorage.removeItem('calc_unlocked');
+  // ★ 先关弹窗！后续操作即使出错也不影响用户看到计算界面
   closePayment();
   // 视觉提示：闪烁按钮
   try {
@@ -587,6 +582,18 @@ function unlockByFollow() {
       setTimeout(function(){ if(btn) btn.style.animation = ''; }, 4000);
     }
   } catch(e) {}
+  // localStorage 操作（可能被浏览器限制，不能阻塞主流程）
+  try {
+    localStorage.removeItem('calc_used_nicks');
+    var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
+    localStorage.setItem('calc_ticket', ticket);
+    localStorage.setItem('calc_nick', nick);
+    localStorage.setItem('calc_waiting', 'true');
+    localStorage.removeItem('calc_unlocked');
+  } catch(e) {
+    // localStorage不可用（WeChat X5限制等），不影响用户操作
+    var ticket = 't-' + Date.now();
+  }
   // 检查是否永久白名单用户
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
   fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', {
