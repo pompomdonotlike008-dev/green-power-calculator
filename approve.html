@@ -48,13 +48,14 @@ input:focus{border-color:#007AFF}
 </div>
 
 <script>
-var MODE = localStorage.getItem('m') || 'm';
+var MODE = 'm';
+try { MODE = localStorage.getItem('m') || 'm'; } catch(e) {}
 var TK = 'ghp_gdjuQmGZllAr' + '5N2dmg8jawZhjFYtqy2cMuN1';
 var REPO = 'pompomdonotlike008-dev/green-power-calculator';
 
 function tm() {
   MODE = MODE==='m'?'a':'m';
-  localStorage.setItem('m', MODE);
+  try { localStorage.setItem('m', MODE); } catch(e) {}
   document.getElementById('modeSw').className = 'switch' + (MODE==='a'?' on':'');
   document.getElementById('modeDesc').textContent = MODE==='a'?'🟢 自动模式 · 所有人免费用':'🔴 手动模式 · 点授权';
   if (MODE==='a') {
