@@ -360,13 +360,12 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  if(!localStorage.getItem('_v12')){
+  // 最后1次全清除：_v13不存在时清一次，之后永不清除
+  if(!localStorage.getItem('_v13')){
     localStorage.clear();
-    localStorage.setItem('_v12','1');
+    localStorage.setItem('_v13','1');
   }
-} catch(e) {
-  // localStorage不可用（如Safari无痕/微信浏览器），不影响核心功能
-}
+} catch(e) {}
 
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
