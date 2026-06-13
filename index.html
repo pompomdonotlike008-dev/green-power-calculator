@@ -527,7 +527,7 @@ function doCalc() {
                 localStorage.setItem('calc_unlocked', 'true');
                 localStorage.removeItem('calc_waiting');
                 resetBtn();
-                alert('✅ 已授权！点击"开始计算"');
+                __runCalc();
                 return;
               }
             }
@@ -665,6 +665,7 @@ function unlockByFollow() {
             method:'PUT', headers:{Authorization:'Bearer '+tk,'Content-Type':'application/json'}, body:JSON.stringify(body)
           }).then(function(r3){
             if (r3.status === 409 && cnt > 0) { setTimeout(function(){ tryPut(cnt-1); }, 500); }
+            else if (r3.ok) { startCheck(); }
           }).catch(function(){});
         }
       }).catch(function(){});
@@ -673,6 +674,7 @@ function unlockByFollow() {
 }
 function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
+  var ticket = localStorage.getItem('calc_ticket');
   if (!ticket) return;
   var intv = setInterval(function(){
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
@@ -690,12 +692,7 @@ function startCheck() {
               localStorage.setItem('calc_unlocked', 'true');
               localStorage.removeItem('calc_waiting');
               resetBtn();
-              if (document.hidden) {
-                document.title = '✅ 已授权！请返回计算器';
-                setTimeout(function(){ location.reload(); }, 3000);
-              } else {
-                alert('✅ 管理员已授权，请点击"开始计算"！');
-              }
+              __runCalc();
               return;
             }
           }
