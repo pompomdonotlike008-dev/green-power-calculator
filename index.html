@@ -347,13 +347,14 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // 最终迁移：清理旧版残留，之后不再碰用户数据
-  if (!localStorage.getItem('__v2')) {
+  // __v3: 清理 _used 残留，之后不再碰用户数据
+  if (!localStorage.getItem('__v3')) {
     localStorage.removeItem('calc_used');
     localStorage.removeItem('_used');
     localStorage.removeItem('_v14');
     localStorage.removeItem('_v15');
-    localStorage.setItem('__v2', '1');
+    localStorage.removeItem('__v2');
+    localStorage.setItem('__v3', '1');
   }
 } catch(e) {}
 
