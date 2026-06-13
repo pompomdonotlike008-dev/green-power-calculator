@@ -332,30 +332,9 @@
 
 
 <script>
-// 检查是否自动模式（只有这一个函数，不依赖其他 block 定义的函数）
-function checkAutoMode() {
-  var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/auto_mode.json', {
-    headers: {Authorization: 'Bearer ' + tk, Accept: 'application/vnd.github.v3+json'}
-  }).then(function(r){
-    if (!r.ok) { localStorage.removeItem('auto_mode'); return; }
-    localStorage.setItem('auto_mode', 'on');
-  }).catch(function(){ localStorage.removeItem('auto_mode'); });
-}
-checkAutoMode();
-setInterval(checkAutoMode, 30000);
-</script>
-<script>
-// ★ 一次性版本清理：_v7不存在时清除所有localStorage，之后永不清除
-try { if (!localStorage.getItem('_v7')) { localStorage.clear(); localStorage.setItem('_v7', '1'); } } catch(e) {}
-function _hasFree() {
-  try { return !localStorage.getItem('_fr1'); } catch(e) { return false; }
-}
-function _useFree() {
-  try { localStorage.setItem('_fr1', '1'); } catch(e) {}
-}
-
-function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
+try { if (!localStorage.getItem('_v8')) { localStorage.clear(); localStorage.setItem('_v8', '1'); } } catch(e) {}
+var _click = 0;
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 function __runCalc() {
   // 清零上次结果 + 显示计算中提示
@@ -496,7 +475,7 @@ function doCalc() {
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次（内存变量，刷新即重置）
-  if (_hasFree()) { _useFree(); __runCalc(); return; }
+  if (_click === 0) { _click++; __runCalc(); return; }
   // 已解锁 → 直接算（不限次，受每日30次限制）
   if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
     var _c_nick = localStorage.getItem('calc_nick');
@@ -628,7 +607,7 @@ function unlockByFollow() {
   try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
   // 如果已经用掉免费次数，才进入等待授权流程（sessionStorage 可能抛出，包try-catch）
   var _freeUsed = true;
-  if (!_hasFree()) {
+  if (_click > 0) {
     try {
       var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
       localStorage.setItem('calc_ticket', ticket);
@@ -702,7 +681,7 @@ function updateBadge() {
   var badge = document.getElementById('usageBadge');
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
-  if (_hasFree()) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
+  if (_click === 0) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
 
