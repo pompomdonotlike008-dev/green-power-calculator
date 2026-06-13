@@ -367,7 +367,7 @@ try {
   }
 } catch(e) {}
 
-function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 function __runCalc() {
   var T = parseFloat(document.getElementById('T').value) || 0;
@@ -469,13 +469,14 @@ function __runCalc() {
     '<span class="font-semibold ' + (LF>LFm?'text-[#2e7d32]':'text-[#c62828]') + '">' + (LF>LFm?'LF > LFm 推荐容量制':'LF < LFm 推荐两部制') + '</span></div>';
 
   document.getElementById('comparison_table').innerHTML =
-    '<div style="overflow-x:auto"><table class="w-full text-sm" style="border-collapse:collapse">' +
-    '<tr><th class="p-2 text-left font-semibold" style="background:#f5f5f7">费用项目</th><th class="p-2 text-center font-semibold" style="background:#faf8f4">传统两部制</th><th class="p-2 text-center font-semibold" style="background:#faf8f4;color:#b8942e">绿电两部制</th><th class="p-2 text-center font-semibold" style="background:#f0f7ff;color:#007AFF">绿电容量制</th></tr>' +
-    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">容量电费</td><td class="p-2 text-center font-mono">' + fmt(T * p_cap) + '</td><td class="p-2 text-center font-mono">' + fmt(cap_g2) + '</td><td class="p-2 text-center font-mono">' + fmt(cap_gc) + '</td></tr>' +
-    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">绿电购电</td><td class="p-2 text-center text-[#999]">—</td><td class="p-2 text-center font-mono">' + fmt(green_g2) + '</td><td class="p-2 text-center font-mono">' + fmt(green_gc) + '</td></tr>' +
-    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">大网购电</td><td class="p-2 text-center font-mono">' + fmt(E_total * p_full) + '</td><td class="p-2 text-center font-mono">' + fmt(grid_g2) + '</td><td class="p-2 text-center font-mono">' + fmt(grid_gc) + '</td></tr>' +
-    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-2">输配电费</td><td class="p-2 text-center">已含</td><td class="p-2 text-center">已含</td><td class="p-2 text-center font-mono">' + fmt(trans_gc) + '</td></tr>' +
-    '<tr><td class="p-2 font-bold">月度总电费</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px">¥ ' + fmt(total_trad) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
+    '<div class="table-wrap" style="overflow-x:auto;font-size:13px">' +
+    '<table class="w-full" style="border-collapse:collapse;min-width:360px">' +
+    '<tr><th class="p-1.5 text-left font-semibold" style="background:#f5f5f7;font-size:12px">费用项</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;font-size:12px">传统两部</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;color:#b8942e;font-size:12px">绿电两部</th><th class="p-1.5 text-center font-semibold" style="background:#f0f7ff;color:#007AFF;font-size:12px">绿电容</th></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">容量电费</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(T * p_cap) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(cap_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(cap_gc) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">绿电购电</td><td class="p-1.5 text-center" style="font-size:12px;color:#999">—</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(green_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(green_gc) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">大网购电</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(E_total * p_full) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(grid_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(grid_gc) + '</td></tr>' +
+    '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">输配电费</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(trans_gc) + '</td></tr>' +
+    '<tr><td class="p-1.5 font-bold" style="font-size:13px">月总电费</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px">¥ ' + fmt(total_trad) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
   }
 function doCalc() {
@@ -527,6 +528,25 @@ function doCalc() {
     return;
   }
   // 弹窗
+  // 最后尝试：同步检查永久名单（兼容 localStorage setItem 在微信X5中抛出异常的场景）
+  var _pn2 = localStorage.getItem('calc_nick');
+  if (_pn2) {
+    try {
+      var _xhr = new XMLHttpRequest();
+      _xhr.open('GET', 'https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', false);
+      _xhr.setRequestHeader('Authorization', 'Bearer ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1');
+      _xhr.send();
+      if (_xhr.status === 200) {
+        var _pld = JSON.parse(atob(JSON.parse(_xhr.responseText).content));
+        for (var _i=0;_i<_pld.length;_i++) {
+          if (_pld[_i].nick === _pn2) {
+            try { localStorage.setItem('calc_unlocked', 'true'); localStorage.setItem('calc_perm_' + _pn2, '1'); } catch(e) {}
+            __runCalc(); return;
+          }
+        }
+      }
+    } catch(e) {}
+  }
   showPaymentWall();
   } catch(e) { __runCalc(); }
 }function adminUnlock() {
@@ -625,7 +645,7 @@ function unlockByFollow() {
   if (isPerm) {
     try { localStorage.setItem('calc_nick', myNick); localStorage.setItem('calc_unlocked', 'true'); localStorage.setItem('calc_perm_' + myNick, '1'); } catch(e) {}
     resetBtn();
-    alert('您是永久白名单用户，已自动解锁！');
+    setTimeout(function(){ __runCalc(); }, 100);
     return;
   }
   // 非永久 → 进入等待授权流程
@@ -732,13 +752,35 @@ try {
     updateBadge();
   }
   var _pn = localStorage.getItem('calc_nick');
+  var _isPerm = false;
   if (_pn && localStorage.getItem('calc_perm_' + _pn) === '1') {
+    _isPerm = true;
     localStorage.setItem('calc_unlocked', 'true');
     updateBadge();
   }
+  // 有昵称但 calc_perm_ 未设置 → 同步检查 permanent.json（兼容 setItem 失败的场景）
+  if (_pn && !_isPerm && !_unlocked) {
+    try {
+      var _x = new XMLHttpRequest();
+      _x.open('GET', 'https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', false);
+      _x.setRequestHeader('Authorization', 'Bearer ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1');
+      _x.send();
+      if (_x.status === 200) {
+        var _pl = JSON.parse(atob(JSON.parse(_x.responseText).content));
+        for (var _i=0;_i<_pl.length;_i++) {
+          if (_pl[_i].nick === _pn) {
+            _isPerm = true;
+            try { localStorage.setItem('calc_unlocked', 'true'); localStorage.setItem('calc_perm_' + _pn, '1'); } catch(e) {}
+            updateBadge();
+            break;
+          }
+        }
+      }
+    } catch(e) {}
+  }
   // 需要授权：已用免费次数 + 未解锁 + 非自动模式 + 非永久用户
   if (localStorage.getItem('calc_used') && !_unlocked && _auto !== 'on') {
-    if (!_pn || (_pn && localStorage.getItem('calc_perm_' + _pn) !== '1')) {
+    if (!_pn || !_isPerm) {
       document.getElementById('paymentOverlay').style.display = 'flex';
     }
   }
