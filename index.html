@@ -53,7 +53,7 @@
 <!-- Payment Wall -->
 <div class="usage-badge" id="usageBadge">加载中</div>
 
-<div class="payment-overlay" id="paymentOverlay" style="display:flex">
+<div class="payment-overlay" id="paymentOverlay" style="display:flex!important">
   <div class="payment-modal">
     <div class="payment-step active" id="payStep1">
       <span style="font-size:48px">🔒</span>
@@ -722,46 +722,46 @@ function adminClick() {
   setTimeout(function(){ adminClicks = 0; }, 3000);
 }
 
-// 初始化：（兼容微信X5跨块函数调用限制）
+// 初始化: 覆盖层默认由 HTML `style="display:flex!important"` 显示
+// 仅在永久白名单用户的情况下才隐藏
 try {
-  updateBadge();  // 始终更新状态徽章
-  // 覆盖层默认显示（CSS display:flex），根据用户状态决定是否隐藏
-  var _unlocked = localStorage.getItem('calc_unlocked');
+  updateBadge();
   var _auto = localStorage.getItem('auto_mode');
   var _pn = localStorage.getItem('calc_nick');
   var _isPerm = false;
+  // 清理旧授权状态（保证每次刷新页面覆盖层都可见）
+  localStorage.removeItem('calc_unlocked');
   // 永久白名单检查
-  if (_pn && localStorage.getItem('calc_perm_' + _pn) === '1') {
-    _isPerm = true;
-    try { localStorage.setItem('calc_unlocked', 'true'); } catch(e) {}
-    updateBadge();
-  }
-  // 有昵称但 calc_perm_ 未设置 → 同步检查 permanent.json（兼容 setItem 失败的场景）
-  if (_pn && !_isPerm && !_unlocked) {
-    try {
-      var _x = new XMLHttpRequest();
-      _x.open('GET', 'https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', false);
-      _x.setRequestHeader('Authorization', 'Bearer ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1');
-      _x.send();
-      if (_x.status === 200) {
-        var _pl = JSON.parse(atob(JSON.parse(_x.responseText).content));
-        for (var _i=0;_i<_pl.length;_i++) {
-          if (_pl[_i].nick === _pn) {
-            _isPerm = true;
-            try { localStorage.setItem('calc_unlocked', 'true'); localStorage.setItem('calc_perm_' + _pn, '1'); } catch(e) {}
-            updateBadge();
-            break;
+  if (_pn) {
+    if (localStorage.getItem('calc_perm_' + _pn) === '1') {
+      _isPerm = true;
+    } else {
+      // 同步检查 permanent.json
+      try {
+        var _x = new XMLHttpRequest();
+        _x.open('GET', 'https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/permanent.json', false);
+        _x.setRequestHeader('Authorization', 'Bearer ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1');
+        _x.send();
+        if (_x.status === 200) {
+          var _pl = JSON.parse(atob(JSON.parse(_x.responseText).content));
+          for (var _i=0;_i<_pl.length;_i++) {
+            if (_pl[_i].nick === _pn) {
+              _isPerm = true;
+              break;
+            }
           }
         }
-      }
-    } catch(e) {}
+      } catch(e) {}
+    }
+    if (_isPerm) {
+      try { localStorage.setItem('calc_unlocked', 'true'); localStorage.setItem('calc_perm_' + _pn, '1'); } catch(e) {}
+      updateBadge();
+      document.getElementById('paymentOverlay').style.display = 'none';
+    }
   }
-  // 已解锁/永久用户/自动模式 → 隐藏覆盖层
-  if (_unlocked || _isPerm || _pn && localStorage.getItem('calc_perm_' + _pn) === '1' || _auto === 'on') {
+  // 自动模式
+  if (_auto === 'on') {
     document.getElementById('paymentOverlay').style.display = 'none';
-  } else {
-    // 新用户/未授权用户 → 明确显示覆盖层
-    document.getElementById('paymentOverlay').style.display = 'flex';
   }
   // 如果正在等待授权，启动轮询
   if (localStorage.getItem('calc_waiting') === 'true') {
