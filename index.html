@@ -553,7 +553,7 @@ function doCalc() {
     } catch(e) {}
   }
   showPaymentWall();
-  } catch(e) { __runCalc(); }
+  } catch(e) { showPaymentWall(); }
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
@@ -774,6 +774,9 @@ try {
   // 已解锁/永久用户/自动模式 → 隐藏覆盖层
   if (_unlocked || _isPerm || _pn && localStorage.getItem('calc_perm_' + _pn) === '1' || _auto === 'on') {
     document.getElementById('paymentOverlay').style.display = 'none';
+  } else {
+    // 新用户/未授权用户 → 明确显示覆盖层
+    document.getElementById('paymentOverlay').style.display = 'flex';
   }
   // 如果正在等待授权，启动轮询
   if (localStorage.getItem('calc_waiting') === 'true') {
