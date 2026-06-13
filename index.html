@@ -476,8 +476,10 @@ function doCalc() {
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次（内存变量，刷新即重置）
   if (_click === 0) { _click++; __runCalc(); return; }
-  // 已解锁 → 直接算（不限次，受每日30次限制）
+  // 已解锁 → 算一次，用完即锁
   if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
+    localStorage.removeItem('calc_unlocked');
+    localStorage.removeItem('calc_ticket');
     var _c_nick = localStorage.getItem('calc_nick');
     if (_c_nick && !checkDailyLimit(_c_nick)) return;
     __runCalc(); return;
