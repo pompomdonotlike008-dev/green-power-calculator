@@ -413,7 +413,7 @@ function __runCalc() {
 
   // === 绿电直连两部制 ===
   var cap_g2 = T * p_cap;
-  var green_g2 = E_new * (p_protocol + p_fund);
+  var green_g2 = E_new * (p_protocol + p_loss + p_trans);
   var grid_g2 = E_grid * p_full;
   var total_g2 = cap_g2 + green_g2 + grid_g2;
 
