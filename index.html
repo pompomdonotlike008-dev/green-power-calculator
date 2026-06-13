@@ -413,7 +413,7 @@ function __runCalc() {
 
   // === 绿电直连两部制 ===
   var cap_g2 = T * p_cap;
-  var green_g2 = E_new * (p_protocol + p_loss + p_trans);
+  var green_g2 = E_new * (p_protocol + p_loss + p_trans + p_op + p_fund);
   var grid_g2 = E_grid * p_full;
   var total_g2 = cap_g2 + green_g2 + grid_g2;
 
@@ -471,7 +471,7 @@ function __runCalc() {
   document.getElementById('comparison_table').innerHTML =
     '<div class="table-wrap" style="overflow-x:auto;font-size:13px">' +
     '<table class="w-full" style="border-collapse:collapse;min-width:360px">' +
-    '<tr><th class="p-1.5 text-left font-semibold" style="background:#f5f5f7;font-size:12px">费用项</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;font-size:12px">传统两部</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;color:#b8942e;font-size:12px">绿电两部</th><th class="p-1.5 text-center font-semibold" style="background:#f0f7ff;color:#007AFF;font-size:12px">绿电容</th></tr>' +
+    '<tr><th class="p-1.5 text-left font-semibold" style="background:#f5f5f7;font-size:12px">费用项</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;font-size:12px">传统两部</th><th class="p-1.5 text-center font-semibold" style="background:#faf8f4;color:#b8942e;font-size:12px">绿电两部</th><th class="p-1.5 text-center font-semibold" style="background:#f0f7ff;color:#007AFF;font-size:12px">绿电容量</th></tr>' +
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">容量电费</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(T * p_cap) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(cap_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(cap_gc) + '</td></tr>' +
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">绿电购电</td><td class="p-1.5 text-center" style="font-size:12px;color:#999">—</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(green_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(green_gc) + '</td></tr>' +
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">大网购电</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(E_total * p_full) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(grid_g2) + '</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(grid_gc) + '</td></tr>' +
