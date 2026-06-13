@@ -484,7 +484,8 @@ function __runCalc() {
     '</div>' +
     '<hr class="my-3 border-[#e5e5ea]">' +
     '<div class="flex items-center gap-2 text-sm"><span class="font-semibold">判断：</span>LF = ' + LF + '%, LFm = ' + LFm + '% -> ' +
-    '<span class="font-semibold ' + (LF>LFm?'text-[#2e7d32]':'text-[#c62828]') + '">' + (LF>LFm?'LF > LFm 推荐容量制':'LF < LFm 推荐两部制') + '</span></div>';
+    '<span class="font-semibold ' + (LF>LFm?'text-[#2e7d32]':'text-[#c62828]') + '">' + (LF>LFm?'LF > LFm 推荐容量制':'LF < LFm 推荐两部制') + '</span></div>' +
+    '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e5ea;font-size:11px;color:#bbb;text-align:center">已授权：' + (localStorage.getItem('calc_nick') || '管理员') + '</div>';
 
   document.getElementById('comparison_table').innerHTML =
     '<div class="table-wrap" style="overflow-x:auto;font-size:13px">' +
@@ -503,7 +504,7 @@ function doCalc() {
   try {
   // 永久白名单用户 → 直接算
   var pn = localStorage.getItem('calc_nick');
-  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { __runCalc(); return; }
+  if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { if (checkDailyLimit(pn)) __runCalc(); return; }
   // 自动模式 → 直接算
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次
@@ -515,6 +516,8 @@ function doCalc() {
   if (localStorage.getItem('calc_unlocked') || localStorage.getItem('calc_unlocked') === 'admin') {
     localStorage.removeItem('calc_unlocked');
     localStorage.removeItem('calc_ticket');
+    var _c_nick = localStorage.getItem('calc_nick');
+    if (_c_nick && !checkDailyLimit(_c_nick)) return;
     __runCalc(); return;
   }
   // 等待授权中
@@ -681,8 +684,8 @@ function unlockByFollow() {
     })();
   });
 }
+function startCheck() {
   var tk = 'ghp_' + 'gdjuQmGZllAr5N2dmg8jawZhjFYtqy2cMuN1';
-  var ticket = localStorage.getItem('calc_ticket');
   if (!ticket) return;
   var intv = setInterval(function(){
     fetch('https://api.github.com/repos/pompomdonotlike008-dev/green-power-calculator/contents/unlock_data/approved_list.json', {
@@ -731,6 +734,23 @@ function updateBadge() {
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
   if (!localStorage.getItem('calc_used')) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
+}
+
+
+function checkDailyLimit(nick) {
+  if (!nick) return true;
+  try {
+    var d = new Date();
+    var ds = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+    var key = 'dl_' + nick + '_' + ds;
+    var n = parseInt(localStorage.getItem(key)) || 0;
+    if (n >= 30) {
+      alert('今日已用30次，请明日再试');
+      return false;
+    }
+    localStorage.setItem(key, String(n + 1));
+  } catch(e) {}
+  return true;
 }
 
 function adminClick() {
