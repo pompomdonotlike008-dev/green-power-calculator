@@ -491,8 +491,8 @@ function doCalc() {
   if (localStorage.getItem('auto_mode') === 'on') { __runCalc(); return; }
   // 还没免费算过：免费一次（sessionStorage 在微信X5可能抛出，包try-catch）
   try {
-    if (!sessionStorage.getItem('_f')) {
-      sessionStorage.setItem('_f', '1');
+    if (!localStorage.getItem('_fr1')) {
+      localStorage.setItem('_fr1', '1');
       __runCalc(); return;
     }
   } catch(e) {}
@@ -627,7 +627,7 @@ function unlockByFollow() {
   try { localStorage.setItem('calc_nick', myNick); } catch(e) {}
   // 如果已经用掉免费次数，才进入等待授权流程（sessionStorage 可能抛出，包try-catch）
   var _freeUsed = true;
-  try { _freeUsed = !!sessionStorage.getItem('_f'); } catch(e) { _freeUsed = true; }
+  try { _freeUsed = !!localStorage.getItem('_fr1'); } catch(e) { _freeUsed = true; }
   if (_freeUsed) {
     try {
       var ticket = Date.now() + '-' + Math.floor(Math.random() * 1000);
@@ -703,7 +703,7 @@ function updateBadge() {
   if (localStorage.getItem('calc_unlocked')) { badge.textContent = '已授权'; badge.style.display = 'block'; return; }
   if (localStorage.getItem('auto_mode') === 'on') { badge.textContent = '自动模式'; badge.style.display = 'block'; return; }
   var _fr = true;
-  try { _fr = !sessionStorage.getItem('_f'); } catch(e) { _fr = false; }
+  try { _fr = !localStorage.getItem('_fr1'); } catch(e) { _fr = false; }
   if (_fr) { badge.textContent = '免费1次'; badge.style.display = 'block'; return; }
   badge.textContent = '需授权'; badge.style.display = 'block';
 }
