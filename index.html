@@ -370,6 +370,22 @@ try {
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}); }
 
 function __runCalc() {
+  // 清零上次结果
+  try {
+    document.getElementById('result_trad').textContent = '';
+    document.getElementById('result_two').textContent = '';
+    document.getElementById('result_cap').textContent = '';
+    document.getElementById('detail_trad').innerHTML = '';
+    document.getElementById('detail_two').innerHTML = '';
+    document.getElementById('detail_cap').innerHTML = '';
+    document.getElementById('analysis_content').innerHTML = '';
+    document.getElementById('comparison_table').innerHTML = '';
+    document.getElementById('recommendation').innerHTML = '';
+    document.getElementById('gaugePointer').style.left = '50%';
+    document.getElementById('liveSummary').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('validationHint').style.display = 'none';
+  } catch(e) {}
   var T = parseFloat(document.getElementById('T').value) || 0;
   var p_cap = parseFloat(document.getElementById('p_cap').value) || 0;
   var E_new = parseFloat(document.getElementById('E_new').value) || 0;
@@ -563,7 +579,7 @@ function doCalc() {
 
 function resetBtn() {
   var btn = document.getElementById('calcBtn');
-  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; btn.onclick = null; }
+  if (btn) { btn.textContent = '⚡ 开始计算'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; btn.style.cursor = 'pointer'; btn.onclick = doCalc; }
 }
 function waitBtn() {
   var btn = document.getElementById('calcBtn');
