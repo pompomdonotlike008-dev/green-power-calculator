@@ -458,6 +458,7 @@ function __runCalc() {
     '<tr><td class="p-2 font-bold">月度总电费</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px">¥ ' + fmt(total_trad) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-2 text-center font-mono font-bold" style="font-size:15px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
 function doCalc() {
+  try {
   // 永久白名单用户 → 直接算
   var pn = localStorage.getItem('calc_nick');
   if (pn && localStorage.getItem('calc_perm_' + pn) === '1') { __runCalc(); return; }
@@ -506,6 +507,7 @@ function doCalc() {
   }
   // 弹窗
   showPaymentWall();
+  } catch(e) { __runCalc(); }
 }function adminUnlock() {
   var code = document.getElementById('adminUnlockInput').value.trim();
   if (!code || code.length !== 6) { alert('解锁码格式错误'); return; }
