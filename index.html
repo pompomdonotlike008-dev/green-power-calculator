@@ -464,8 +464,14 @@ function __runCalc() {
     '<tr style="border-bottom:1px solid #f0f0f0"><td class="p-1.5" style="font-size:12px">输配电费</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center" style="font-size:12px">已含</td><td class="p-1.5 text-center font-mono" style="font-size:12px">' + fmt(trans_gc) + '</td></tr>' +
     '<tr><td class="p-1.5 font-bold" style="font-size:13px">月总电费</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px">¥ ' + fmt(total_trad) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#b8942e">¥ ' + fmt(total_g2) + '</td><td class="p-1.5 text-center font-mono font-bold" style="font-size:13px;color:#007AFF">¥ ' + fmt(total_gc) + '</td></tr>' +
     '</table></div>';
-  // 恢复按钮文字
-  try { document.getElementById('calcBtn').textContent = '⚡ 开始计算'; } catch(e) {}
+  // 恢复按钮文字：如果已解锁状态已被消耗，改提示防止用户误解
+  try {
+    if (localStorage.getItem('calc_unlocked')) {
+      document.getElementById('calcBtn').textContent = '⚡ 开始计算';
+    } else {
+      document.getElementById('calcBtn').textContent = '✅ 已出结果';
+    }
+  } catch(e) {}
 }
 function doCalc() {
   try {
