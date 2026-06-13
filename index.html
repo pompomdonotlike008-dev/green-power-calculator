@@ -359,12 +359,14 @@ if (localStorage.getItem('calc_unlocked') || localStorage.getItem('auto_mode') =
 setInterval(checkAutoMode, 30000);
 </script>
 <script>
-// v10 - 强制清除旧数据，每人给1次免费
-if(!localStorage.getItem('_v12')){
-  localStorage.clear();
-  localStorage.setItem('_v12','1');
+try {
+  if(!localStorage.getItem('_v12')){
+    localStorage.clear();
+    localStorage.setItem('_v12','1');
+  }
+} catch(e) {
+  // localStorage不可用（如Safari无痕/微信浏览器），不影响核心功能
 }
-// 计算完成后销毁免费券
 
 function fmt(n) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
