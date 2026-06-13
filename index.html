@@ -360,10 +360,10 @@ setInterval(checkAutoMode, 30000);
 </script>
 <script>
 try {
-  // _v14: 最终清一次，之后永不清除
-  if(!localStorage.getItem('_v14')){
+  // _v15: 现在所有用户清一次，之后永不清除
+  if(!localStorage.getItem('_v15')){
     localStorage.clear();
-    localStorage.setItem('_v14','1');
+    localStorage.setItem('_v15','1');
   }
 } catch(e) {}
 
